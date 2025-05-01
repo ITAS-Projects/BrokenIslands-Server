@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.database.env server.js"
+    "start": "node --env-file=.database.env ./src/server.js"
   },
   "author": "",
   "license": "ISC",
