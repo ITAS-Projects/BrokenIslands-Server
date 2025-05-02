@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
     });
   
     Boat.associate = (models) => {
-      Boat.belongsTo(models.Reservation, { as: 'FromGroup' });
+      Boat.belongsTo(models.Schedule);
     };
   
     return Boat;

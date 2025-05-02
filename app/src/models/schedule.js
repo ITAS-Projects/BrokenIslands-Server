@@ -1,22 +1,26 @@
 module.exports = (sequelize, DataTypes) => {
     const Schedule = sequelize.define('Schedule', {
-      timeStart: DataTypes.DATE,
-      timeEnd: DataTypes.DATE,
-      day: DataTypes.STRING,
+      timeStart: DataTypes.TIME,
+      timeEnd: DataTypes.TIME,
+      day: DataTypes.DATE,
       fromPlace: DataTypes.STRING,
       toPlace: DataTypes.STRING,
       costOverride: DataTypes.FLOAT,
-      reason: DataTypes.STRING
+      reason: DataTypes.STRING,
+      numberOfPeople: DataTypes.INTEGER,
+      numberOfBoats: DataTypes.INTEGER
     });
   
     Schedule.associate = (models) => {
-      // Schedule.belongsTo(models.Taxi, { as: 'TaxiUsed' });
+      Schedule.belongsTo(models.Taxi);
       Schedule.belongsToMany(models.Person, {
         through: 'PersonSchedule',
         foreignKey: 'scheduleId',
         otherKey: 'personId'
       });
-      Schedule.belongsTo(models.Reservation);
+      Schedule.hasMany(models.Boat);
+
+      // Schedule.belongsTo(models.Reservation);
     };
   
     return Schedule;

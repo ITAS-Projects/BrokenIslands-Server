@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'personId',
         otherKey: 'scheduleId'
       });
-      // Person.hasOne(models.Reservation, {as: 'reservation', foreignKey: 'reserver' });
+      Person.hasOne(models.Reservation, {as: 'reservation', foreignKey: 'reserver' });
     };
   
     return Person;
