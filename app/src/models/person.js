@@ -5,8 +5,12 @@ module.exports = (sequelize, DataTypes) => {
     });
   
     Person.associate = (models) => {
-      Person.belongsToMany(models.Schedule, { through: 'plans' });
-      Person.hasOne(models.Reservation, {as: 'reservation', foreignKey: 'reserver' });
+      Person.belongsToMany(models.Schedule, {
+        through: 'PersonSchedule',
+        foreignKey: 'personId',
+        otherKey: 'scheduleId'
+      });
+      // Person.hasOne(models.Reservation, {as: 'reservation', foreignKey: 'reserver' });
     };
   
     return Person;

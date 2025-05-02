@@ -10,9 +10,13 @@ module.exports = (sequelize, DataTypes) => {
     });
   
     Schedule.associate = (models) => {
-      Schedule.belongsTo(models.Taxi, { as: 'TaxiUsed' });
-      Schedule.belongsToMany(models.Person, { through: 'PersonSchedules' });
-      Schedule.belongsTo(models.Reservation, { as: 'reservation' });
+      // Schedule.belongsTo(models.Taxi, { as: 'TaxiUsed' });
+      Schedule.belongsToMany(models.Person, {
+        through: 'PersonSchedule',
+        foreignKey: 'scheduleId',
+        otherKey: 'personId'
+      });
+      Schedule.belongsTo(models.Reservation);
     };
   
     return Schedule;
