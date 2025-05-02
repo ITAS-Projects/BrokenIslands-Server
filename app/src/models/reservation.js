@@ -1,37 +1,17 @@
-// models/reservation.js
-const db = require('../config/db');
-
-const Reservation = {
-  getAll: () => {
-    return new Promise((resolve, reject) => {
-      db.query("SELECT * FROM reservations;", (err, result) => {
-        if (err) reject(err);
-        resolve(result);
-      });
+module.exports = (sequelize, DataTypes) => {
+    const Reservation = sequelize.define('Reservation', {
+      timesCamping: DataTypes.INTEGER,
+      timesInLodge: DataTypes.INTEGER
     });
-  },
-
-  getByPersonId: (personId) => {
-    return new Promise((resolve, reject) => {
-      const sql = "SELECT * FROM reservations WHERE person_id = ?";
-      db.query(sql, [personId], (err, result) => {
-        if (err) reject(err);
-        resolve(result);
-      });
-    });
-  },
-
-  create: (personId, reservationDate) => {
-    return new Promise((resolve, reject) => {
-      const sql = "INSERT INTO reservations (person_id, reservation_date) VALUES (?, ?)";
-      db.query(sql, [personId, reservationDate], (err, result) => {
-        if (err) reject(err);
-        resolve(result);
-      });
-    });
-  },
-
-  // More methods as needed (e.g., update, delete)
-};
-
-module.exports = Reservation;
+  
+    Reservation.associate = (models) => {
+      Reservation.belongsTo(models.Person, { as: 'ReservedBy', foreignKey: 'reserver' });
+      Reservation.hasMany(models.Boat, { as: 'boats' });
+      Reservation.hasMany(models.Person, { as: 'People' }); // all people in reservation
+      Reservation.hasOne(models.Schedule, { as: 'ArrivalTime', foreignKey: 'arrivalScheduleId' });
+      Reservation.hasOne(models.Schedule, { as: 'DepartureTime', foreignKey: 'departureScheduleId' });
+    };
+  
+    return Reservation;
+  };
+  

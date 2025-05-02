@@ -1,23 +1,18 @@
-// server.js
 const express = require('express');
-const cors = require('cors');
 const app = express();
-const peopleRoutes = require('./routes/peopleRoutes');
-const reservationRoutes = require('./routes/reservationRoutes');
+const cors = require('cors');
+const db = require('./models');
 
 app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/people', peopleRoutes);
-app.use('/reservations', reservationRoutes);
+app.use('/people', require('./routes/person'));
+app.use('/reservations', require('./routes/reservation'));
+app.use('/schedules', require('./routes/schedule'));
+app.use('/taxis', require('./routes/taxi'));
+app.use('/boats', require('./routes/boat'));
 
-// Handle 404 (not found)
-app.use((req, res) => {
-  res.status(404).json({ error: `Invalid route: ${req.originalUrl}` });
-});
-
-// Start the server
-app.listen(8081, () => {
-  console.log("Server is listening on port 8081");
+db.sequelize.sync().then(() => {
+  app.listen(8081, () => console.log('Server is running on http://localhost:8081'));
 });
