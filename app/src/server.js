@@ -12,6 +12,7 @@ app.use('/reservations', require('./routes/reservation'));
 app.use('/schedules', require('./routes/schedule'));
 app.use('/taxis', require('./routes/taxi'));
 app.use('/boats', require('./routes/boat'));
+app.use('/trips', require('./routes/trip'));
 
 db.sequelize.sync().then(() => {
   app.listen(8081, () => console.log('Server is running on http://localhost:8081'));
