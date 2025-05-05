@@ -12,7 +12,11 @@ module.exports = (sequelize, DataTypes) => {
     Trip.associate = (models) => {
       Trip.belongsTo(models.Taxi);        // the taxi that will be used
       Trip.belongsTo(models.Schedule);    // the schedule that has this trip in it
-      Trip.hasMany(models.Boat);          // the boats that will be carried in this trip
+      Trip.belongsToMany(models.Boat, {
+        through: 'BoatTrips',
+        foreignKey: 'tripId',
+        otherKey: 'boatId'
+      });                                 // the boats that will be carried in this trip
       Trip.belongsToMany(models.Person, {
         through: 'PersonTrip',
         foreignKey: 'tripId',

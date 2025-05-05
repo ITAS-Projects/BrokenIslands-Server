@@ -13,7 +13,8 @@ const getAll = async () => {
         through: { attributes: [] }
       },
       {
-        model: Boat
+        model: Boat,
+        through: { attributes: [] } // assuming many-to-many
       },
       {
         model: Taxi
@@ -33,7 +34,8 @@ const getById = async (id) => {
         through: { attributes: [] } // assuming many-to-many
       },
       {
-        model: Boat
+        model: Boat,
+        through: { attributes: [] } // assuming many-to-many
       },
       {
         model: Taxi
@@ -54,18 +56,13 @@ const create = async (data) => {
   }
 
   if (data.boatsIds && Array.isArray(data.boatsIds) && data.boatsIds.length > 0) {
-    await trip.setBoats(data.boatsIds);
+    await trip.addBoats(data.boatsIds);
   }
 
   return trip;
 };
 
 const update = async (id, data) => {
-
-  if (data.costOverride === "") {
-    data.costOverride = null; // or undefined if your ORM prefers it
-  }
-
   const trip = await Trip.findByPk(id);
   if (!trip) {
     throw new Error('Trip not found');

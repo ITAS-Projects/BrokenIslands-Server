@@ -16,7 +16,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'scheduleId',
         otherKey: 'personId'
       });                                 // the people that have specific needs or data (e.g the reserver for the reservation, the people that have allergies ect)
-      Schedule.hasMany(models.Boat);      // the boats that will be moved on the trip
+      Schedule.belongsToMany(models.Trip, {
+        through: 'BoatSchedules',
+        foreignKey: 'scheduleId',
+        otherKey: 'boatId'
+      });                                 // the boats that will be moved on the trip
       Schedule.hasMany(models.Trip);      // the trip(s) that will move all the people and boats to the right place (might need more than one if above 12, and more than 2 if above 20)
     };
   

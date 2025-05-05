@@ -11,7 +11,8 @@ const getAll = async () => {
         through: { attributes: [] }
       },
       {
-        model: Boat
+        model: Boat,
+        through: { attributes: [] } // assuming many-to-many
       }
     ]
   });
@@ -25,18 +26,14 @@ const getById = async (id) => {
         through: { attributes: [] } // assuming many-to-many
       },
       {
-        model: Boat
+        model: Boat,
+        through: { attributes: [] } // assuming many-to-many
       }
     ]
   });
 };
 
-
 const create = async (data) => {
-  if (data.costOverride === "") {
-    data.costOverride = null; // or undefined if your ORM prefers it
-  }
-
   const schedule = await Schedule.create(data);
 
   if (data.personIds && Array.isArray(data.personIds) && data.personIds.length > 0) {
@@ -44,18 +41,13 @@ const create = async (data) => {
   }
 
   if (data.boatsIds && Array.isArray(data.boatsIds) && data.boatsIds.length > 0) {
-    await schedule.setBoats(data.boatsIds);
+    await schedule.addBoats(data.boatsIds);
   }
 
   return schedule;
 };
 
 const update = async (id, data) => {
-
-  if (data.costOverride === "") {
-    data.costOverride = null; // or undefined if your ORM prefers it
-  }
-
   const item = await Schedule.findByPk(id);
   if (!item) {
     throw new Error('Schedule not found');
