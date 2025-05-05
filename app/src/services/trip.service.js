@@ -47,10 +47,6 @@ const getById = async (id) => {
 
 
 const create = async (data) => {
-  if (data.costOverride === "") {
-    data.costOverride = null; // or undefined if your ORM prefers it
-  }
-
   const trip = await Trip.create(data);
 
   if (data.personIds && Array.isArray(data.personIds) && data.personIds.length > 0) {
