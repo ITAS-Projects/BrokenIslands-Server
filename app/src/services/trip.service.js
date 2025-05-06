@@ -1,26 +1,34 @@
 const db = require('../models');
 const Boat = db.Boat;
-const Schedule = db.Schedule;
+const Group = db.Group;
 const Person = db.Person;
 const Trip = db.Trip;
 const Taxi = db.Taxi;
+const Reservation = db.Reservation;
 
 const getAll = async () => {
   return await Trip.findAll({
     include: [
       {
-        model: Person,
-        through: { attributes: [] }
-      },
-      {
-        model: Boat,
-        through: { attributes: [] } // assuming many-to-many
-      },
-      {
         model: Taxi
       },
       {
-        model: Schedule
+        model: Group,
+        through: { attributes: [] },
+        include: [
+          {
+            model: Boat,
+          }
+        ]
+      },
+      {
+        model: Reservation,
+        through: { attributes: [] },
+        include: [
+          {
+            model: Boat,
+          }
+        ]
       }
     ]
   });
@@ -30,18 +38,25 @@ const getById = async (id) => {
   return await Trip.findByPk(id, {
     include: [
       {
-        model: Person,
-        through: { attributes: [] } // assuming many-to-many
-      },
-      {
-        model: Boat,
-        through: { attributes: [] } // assuming many-to-many
-      },
-      {
         model: Taxi
       },
       {
-        model: Schedule
+        model: Group,
+        through: { attributes: [] },
+        include: [
+          {
+            model: Boat,
+          }
+        ]
+      },
+      {
+        model: Reservation,
+        through: { attributes: [] },
+        include: [
+          {
+            model: Boat,
+          },
+        ]
       }
     ]
   });

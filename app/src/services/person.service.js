@@ -1,18 +1,29 @@
 const db = require('../models');
 const Person = db.Person;
-const Schedule = db.Schedule;
+const Group = db.Group;
 const Trip = db.Trip;
+const Reservation = db.Reservation;
+const Boat = db.Boat;
 
 const getAll = async () => {
   return await Person.findAll({
     include: [
       {
-        model: Schedule,
+        model: Group,
         through: { attributes: [] } // This hides the join table data (PersonSchedule)
       },
       {
         model: Trip,
         through: { attributes: [] } // This hides the join table data (PersonTrip)
+      },
+      {
+        model: Group,
+        as: "leaderFor",
+        include: [
+          {
+            model: Reservation,
+          }
+        ]
       },
     ]
   });
@@ -22,12 +33,21 @@ const getById = async (id) => {
   return await Person.findByPk(id, {
     include: [
       {
-        model: Schedule,
+        model: Group,
         through: { attributes: [] } // This hides the join table data (PersonSchedule)
       },
       {
         model: Trip,
         through: { attributes: [] } // This hides the join table data (PersonTrip)
+      },
+      {
+        model: Group,
+        as: "leaderFor",
+        include: [
+          {
+            model: Reservation,
+          }
+        ]
       },
     ]
   });

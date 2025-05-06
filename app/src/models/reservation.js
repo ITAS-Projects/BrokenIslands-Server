@@ -4,11 +4,12 @@ module.exports = (sequelize, DataTypes) => {
   
     Reservation.associate = (models) => {
       Reservation.belongsTo(models.Group);    // the group that reserved
-      Reservation.belongsToMany(models.Boat, {
-        through: 'ReservationBoat',
+      Reservation.hasMany(models.Boat);                                     // The boats being transported by the arrival and departure times
+      Reservation.belongsToMany(models.Trip, {
+        through: 'ReservationTrip',
         foreignKey: 'reservationId',
-        otherKey: 'boatId'
-      });                                     // The boats being transported by the arrival and departure times
+        otherKey: 'tripId'
+      });
     };
   
     return Reservation;

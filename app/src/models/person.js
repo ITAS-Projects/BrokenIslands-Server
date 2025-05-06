@@ -5,11 +5,6 @@ module.exports = (sequelize, DataTypes) => {
     });
   
     Person.associate = (models) => {
-      Person.belongsToMany(models.Boat, {
-        through: 'PersonBoat',
-        foreignKey: 'personId',
-        otherKey: 'boatId'
-      }); 
       Person.belongsToMany(models.Group, {
         through: 'PersonGroup',
         foreignKey: 'personId',
@@ -20,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'personId',
         otherKey: 'tripId'
       });                                                                                 // the trips that the person is going on
-      // Person.hasOne(models.Group, {as: 'leaderFor', foreignKey: 'leader' });                 // the reservation the person is in
+      Person.hasMany(models.Group, { foreignKey: 'GroupLeader', as: 'leaderFor' });
     };
   
     return Person;

@@ -22,6 +22,10 @@ const getAll = async () => {
       {
         model: Trip,
         through: { attributes: [] }
+      },
+      {
+        model: Person,
+        as: 'leader'
       }
     ]
   });
@@ -35,8 +39,7 @@ const getById = async (id) => {
         through: { attributes: [] } // assuming many-to-many
       },
       {
-        model: Boat,
-        through: { attributes: [] } // assuming many-to-many
+        model: Boat
       },
       {
         model: Reservation,
@@ -54,42 +57,42 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
-  const schedule = await Group.create(data);
+  const group = await Group.create(data);
 
   if (data.personIds && Array.isArray(data.personIds) && data.personIds.length > 0) {
-    await schedule.addPeople(data.personIds);
+    await group.addPeople(data.personIds);
   }
 
   if (data.boatsIds && Array.isArray(data.boatsIds) && data.boatsIds.length > 0) {
-    await schedule.addBoats(data.boatsIds);
+    await group.addBoats(data.boatsIds);
   }
 
-  return schedule;
+  return group;
 };
 
 const update = async (id, data) => {
-  const item = await Group.findByPk(id);
-  if (!item) {
+  const group = await Group.findByPk(id);
+  if (!group) {
     throw new Error('Schedule not found');
   }
 
-  await item.update(data);
+  await group.update(data);
 
   if (data.personIds && Array.isArray(data.personIds)) {
-    await item.setPeople(data.personIds); // Replaces associations
+    await group.setPeople(data.personIds); // Replaces associations
   }
 
   if (data.boatsIds && Array.isArray(data.boatsIds)) {
-    await item.setBoats(data.boatsIds);
+    await group.setBoats(data.boatsIds);
   }
 
-  return item;
+  return group;
 };
 
 
 const deleteOne = async (id) => {
-  const item = await Group.findByPk(id);
-  return await item.destroy();
+  const group = await Group.findByPk(id);
+  return await group.destroy();
 };
 
 module.exports = {

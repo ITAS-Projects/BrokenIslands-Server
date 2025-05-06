@@ -6,21 +6,8 @@ module.exports = (sequelize, DataTypes) => {
     });
   
     Boat.associate = (models) => {  
-      Boat.belongsToMany(models.Reservation, {
-        through: 'ReservationBoat',
-        foreignKey: 'boatId',
-        otherKey: 'reservationId'
-      }); 
-      Boat.belongsToMany(models.Group, {
-        through: 'GroupBoat',
-        foreignKey: 'boatId',
-        otherKey: 'groupId'
-      });
-      Boat.belongsToMany(models.Person, {
-        through: 'PersonBoat',
-        foreignKey: 'boatId',
-        otherKey: 'personId'
-      });
+      Boat.belongsTo(models.Group);
+      Boat.belongsTo(models.Reservation);
     };
   
     return Boat;
