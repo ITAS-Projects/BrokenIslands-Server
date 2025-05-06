@@ -9,12 +9,7 @@ module.exports = (sequelize, DataTypes) => {
         through: 'PersonGroup',
         foreignKey: 'personId',
         otherKey: 'groupId'
-      });                                                                                
-      Person.belongsToMany(models.Trip, {
-        through: 'PersonTrip',
-        foreignKey: 'personId',
-        otherKey: 'tripId'
-      });                                                                                 // the trips that the person is going on
+      });                                                                              // the trips that the person is going on
       Person.hasMany(models.Group, { foreignKey: 'GroupLeader', as: 'leaderFor' });
     };
   

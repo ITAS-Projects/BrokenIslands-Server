@@ -1,7 +1,6 @@
 const db = require('../models');
 const Boat = db.Boat;
 const Group = db.Group;
-const Person = db.Person;
 const Trip = db.Trip;
 const Taxi = db.Taxi;
 const Reservation = db.Reservation;
@@ -29,7 +28,16 @@ const getAll = async () => {
             model: Boat,
           }
         ]
-      }
+      },
+      {
+        model: Group,
+        as: 'People',
+        include: [
+          {
+            model: Boat,
+          }
+        ]
+      },
     ]
   });
 };

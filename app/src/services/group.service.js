@@ -14,7 +14,6 @@ const getAll = async () => {
       },
       {
         model: Boat,
-        through: { attributes: [] }
       },
       {
         model: Reservation,

@@ -13,10 +13,6 @@ const getAll = async () => {
         through: { attributes: [] } // This hides the join table data (PersonSchedule)
       },
       {
-        model: Trip,
-        through: { attributes: [] } // This hides the join table data (PersonTrip)
-      },
-      {
         model: Group,
         as: "leaderFor",
         include: [
@@ -35,10 +31,6 @@ const getById = async (id) => {
       {
         model: Group,
         through: { attributes: [] } // This hides the join table data (PersonSchedule)
-      },
-      {
-        model: Trip,
-        through: { attributes: [] } // This hides the join table data (PersonTrip)
       },
       {
         model: Group,

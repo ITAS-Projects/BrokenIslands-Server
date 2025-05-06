@@ -16,16 +16,12 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'tripId',
       otherKey: 'reservationId'
     });                                 // the boats that will be carried in this trip
-    Trip.belongsToMany(models.Person, {
-      through: 'PersonTrip',
-      foreignKey: 'tripId',
-      otherKey: 'personId'
-    });                                 // the people on the trip that have names / data eg reserver, or allergies
     Trip.belongsToMany(models.Group, {
       through: 'GroupTrip',
       foreignKey: 'tripId',
       otherKey: 'groupId'
     });
+    Trip.hasOne(models.Group, { foreignKey: 'AdditionalPeople', as: 'People' });
   };
 
   return Trip;
