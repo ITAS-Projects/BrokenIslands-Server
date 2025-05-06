@@ -6,16 +6,21 @@ module.exports = (sequelize, DataTypes) => {
     });
   
     Boat.associate = (models) => {  
-      Boat.belongsToMany(models.Schedule, {
-        through: 'BoatSchedules',
+      Boat.belongsToMany(models.Reservation, {
+        through: 'ReservationBoat',
         foreignKey: 'boatId',
-        otherKey: 'scheduleId'
-      });                               // Allow Schedule to make boats
-      Boat.belongsToMany(models.Trip, {
-        through: 'BoatTrips',
+        otherKey: 'reservationId'
+      }); 
+      Boat.belongsToMany(models.Group, {
+        through: 'GroupBoat',
         foreignKey: 'boatId',
-        otherKey: 'tripId'
-      });                               // Allow Trip to use boats    
+        otherKey: 'groupId'
+      });
+      Boat.belongsToMany(models.Person, {
+        through: 'PersonBoat',
+        foreignKey: 'boatId',
+        otherKey: 'personId'
+      });
     };
   
     return Boat;

@@ -1,10 +1,12 @@
 const db = require('../models');
 const Boat = db.Boat;
-const Schedule = db.Schedule;
+const Group = db.Group;
 const Person = db.Person;
+const Reservation = db.Reservation;
+const Trip = db.Trip;
 
 const getAll = async () => {
-  return await Schedule.findAll({
+  return await Group.findAll({
     include: [
       {
         model: Person,
@@ -12,14 +14,21 @@ const getAll = async () => {
       },
       {
         model: Boat,
-        through: { attributes: [] } // assuming many-to-many
+        through: { attributes: [] }
+      },
+      {
+        model: Reservation,
+      },
+      {
+        model: Trip,
+        through: { attributes: [] }
       }
     ]
   });
 };
 
 const getById = async (id) => {
-  return await Schedule.findByPk(id, {
+  return await Group.findByPk(id, {
     include: [
       {
         model: Person,
@@ -28,13 +37,24 @@ const getById = async (id) => {
       {
         model: Boat,
         through: { attributes: [] } // assuming many-to-many
+      },
+      {
+        model: Reservation,
+      },
+      {
+        model: Trip,
+        through: { attributes: [] }
+      },
+      {
+        model: Person,
+        as: 'leader'
       }
     ]
   });
 };
 
 const create = async (data) => {
-  const schedule = await Schedule.create(data);
+  const schedule = await Group.create(data);
 
   if (data.personIds && Array.isArray(data.personIds) && data.personIds.length > 0) {
     await schedule.addPeople(data.personIds);
@@ -48,7 +68,7 @@ const create = async (data) => {
 };
 
 const update = async (id, data) => {
-  const item = await Schedule.findByPk(id);
+  const item = await Group.findByPk(id);
   if (!item) {
     throw new Error('Schedule not found');
   }
@@ -68,7 +88,7 @@ const update = async (id, data) => {
 
 
 const deleteOne = async (id) => {
-  const item = await Schedule.findByPk(id);
+  const item = await Group.findByPk(id);
   return await item.destroy();
 };
 

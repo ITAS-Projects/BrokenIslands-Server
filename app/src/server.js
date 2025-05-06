@@ -9,7 +9,7 @@ app.use(express.json());
 // Routes
 app.use('/people', require('./routes/person'));
 app.use('/reservations', require('./routes/reservation'));
-app.use('/schedules', require('./routes/schedule'));
+app.use('/groups', require('./routes/group'));
 app.use('/taxis', require('./routes/taxi'));
 app.use('/boats', require('./routes/boat'));
 app.use('/trips', require('./routes/trip'));

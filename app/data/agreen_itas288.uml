@@ -3,60 +3,101 @@
   <ID>DATABASE</ID>
   <OriginalElement>ad61717f-f99d-4e14-a938-df30b0732608.SCHEMA:agreen_itas288</OriginalElement>
   <nodes>
-    <node x="121.5" y="536.0">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Taxis</node>
-    <node x="-38.5" y="1480.0">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Boats</node>
-    <node x="94.5" y="1308.0">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonSchedule</node>
-    <node x="31.0" y="892.0">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Trips</node>
-    <node x="-84.0" y="-176.0">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.People</node>
-    <node x="-79.0" y="112.0">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Reservations</node>
-    <node x="-91.5" y="440.0">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Schedules</node>
+    <node x="400.9928876244667" y="1179.3168136557604">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Taxis</node>
+    <node x="701.0569274537696" y="494.33001422475104">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonBoat</node>
+    <node x="400.9928876244667" y="918.8389046941676">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.GroupTrip</node>
+    <node x="763.4160739687056" y="677.7535561877667">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.People</node>
+    <node x="-23.57112375533427" y="453.73792318634423">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.ReservationBoat</node>
+    <node x="444.27657325746816" y="446.33001422475104">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Boats</node>
+    <node x="175.77392603129454" y="969.3687339971545">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Trips</node>
+    <node x="650.6443812233285" y="909.1770981507823">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonTrip</node>
+    <node x="-37.44503556187766" y="925.7815931721193">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.ReservationTrip</node>
+    <node x="513.5" y="729.0867709815077">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonGroup</node>
+    <node x="321.4928876244667" y="755.859174964438">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Groups</node>
+    <node x="-5.57112375533427" y="718.1121109530582">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Reservations</node>
+    <node x="217.49644381223334" y="557.1906685633002">ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.GroupBoat</node>
   </nodes>
   <notes />
   <edges>
-    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Schedules" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Reservations" relationship="REFERENCES">
-      <point x="45.75" y="-176.0" />
-      <point x="45.75" y="416.0" />
-      <point x="39.5" y="416.0" />
-      <point x="39.5" y="104.0" />
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.GroupTrip" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Trips" relationship="REFERENCES">
+      <point x="-78.5" y="0.0" />
+      <point x="91.0" y="-134.52982930298697" />
     </edge>
-    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.People" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Reservations" relationship="REFERENCES">
-      <point x="-42.0" y="92.0" />
-      <point x="-42.0" y="76.0" />
-      <point x="-39.5" y="76.0" />
-      <point x="-39.5" y="-104.0" />
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.People" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Groups" relationship="REFERENCES">
+      <point x="-84.0" y="-84.0628876244665" />
+      <point x="400.4928876244667" y="685.6906685633002" />
+      <point x="0.0" y="-68.0" />
     </edge>
-    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Reservations" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.People" relationship="REFERENCES">
-      <point x="39.5" y="-104.0" />
-      <point x="39.5" y="76.0" />
-      <point x="42.0" y="76.0" />
-      <point x="42.0" y="92.0" />
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Reservations" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Groups" relationship="REFERENCES">
+      <point x="78.5" y="37.74706401137985" />
+      <point x="-79.0" y="0.0" />
     </edge>
-    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Boats" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Trips" relationship="REFERENCES">
-      <point x="39.25" y="-116.0" />
-      <point x="79.25" y="1296.0" />
-      <point x="120.0" y="1296.0" />
-      <point x="0.0" y="164.0" />
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.ReservationBoat" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Boats" relationship="REFERENCES">
+      <point x="87.5" y="-14.239687055476566" />
+      <point x="-78.5" y="-30.831778093883372" />
     </edge>
-    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Trips" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Schedules" relationship="REFERENCES">
-      <point x="-44.5" y="-164.0" />
-      <point x="75.5" y="856.0" />
-      <point x="0.0" y="856.0" />
-      <point x="0.0" y="176.0" />
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.GroupBoat" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Boats" relationship="REFERENCES">
+      <point x="78.5" y="-2.360654338549125" />
+      <point x="-78.5" y="84.5" />
     </edge>
-    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Boats" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Schedules" relationship="REFERENCES">
-      <point x="-39.25" y="-116.0" />
-      <point x="0.75" y="1456.0" />
-      <point x="0.0" y="1456.0" />
-      <point x="0.0" y="176.0" />
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonBoat" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Boats" relationship="REFERENCES">
+      <point x="-78.5" y="0.0" />
+      <point x="537.7766856330015" y="562.330014224751" />
+      <point x="15.00011237553332" y="91.99999999999997" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonBoat" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.People" relationship="REFERENCES">
+      <point x="78.5" y="0.0" />
+      <point x="847.4160739687056" y="562.330014224751" />
+      <point x="0.0" y="-92.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.GroupBoat" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Groups" relationship="REFERENCES">
+      <point x="32.99644381223334" y="68.0" />
+      <point x="328.9928876244667" y="684.929587482219" />
+      <point x="-71.5" y="-68.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonGroup" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Groups" relationship="REFERENCES">
+      <point x="-78.5" y="26.772403982930314" />
+      <point x="79.0" y="0.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.ReservationTrip" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Trips" relationship="REFERENCES">
+      <point x="0.0" y="67.99999999999989" />
+      <point x="47.55496443812234" y="1121.3687339971545" />
+      <point x="-91.0" y="0.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonTrip" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Trips" relationship="REFERENCES">
+      <point x="0.0" y="68.0" />
+      <point x="729.1443812233285" y="1121.3687339971545" />
+      <point x="91.0" y="0.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.ReservationTrip" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Reservations" relationship="REFERENCES">
+      <point x="25.37391180654339" y="-68.0" />
+      <point x="0.0" y="68.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.ReservationBoat" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Reservations" relationship="REFERENCES">
+      <point x="9.0" y="68.0" />
+      <point x="0.0" y="-68.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonTrip" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.People" relationship="REFERENCES">
+      <point x="78.5" y="0.0" />
+      <point x="862.416" y="977.1770981507823" />
+      <point x="14.999926031294422" y="92.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.PersonGroup" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.People" relationship="REFERENCES">
+      <point x="78.5" y="-46.52418207681353" />
+      <point x="716.9580369843528" y="750.5625889046942" />
+      <point x="716.9580369843528" y="769.7535561877667" />
+      <point x="-84.0" y="0.0" />
+    </edge>
+    <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.GroupTrip" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Groups" relationship="REFERENCES">
+      <point x="-7.5" y="-68.0" />
+      <point x="71.5" y="68.0" />
     </edge>
     <edge source="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Trips" target="ad61717f-f99d-4e14-a938-df30b0732608.TABLE:agreen_itas288.Taxis" relationship="REFERENCES">
-      <point x="44.5" y="-164.0" />
-      <point x="164.5" y="856.0" />
-      <point x="200.0" y="856.0" />
-      <point x="0.0" y="80.0" />
+      <point x="91.0" y="137.94807965860582" />
+      <point x="-78.5" y="0.0" />
     </edge>
   </edges>
-  <settings layout="Hierarchic Compact" zoom="1.0" showDependencies="false" x="103.5" y="778.0" />
+  <settings layout="Hierarchic Compact" zoom="0.6263364219529581" showDependencies="false" x="551.5469758179266" y="894.3888250355624" />
   <SelectedNodes />
   <Categories>
     <Category>Columns</Category>

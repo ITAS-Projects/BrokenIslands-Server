@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     });
   
     Taxi.associate = (models) => {
-      Taxi.hasMany(models.Trip, { as: 'trips' }); // the trips the taxi needs to take
+      Taxi.hasMany(models.Trip);                  // the trips the taxi needs to take
     };
   
     return Taxi;
