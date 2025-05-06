@@ -30,37 +30,43 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
-  const boat = await Boat.create(data);
+  const { ReservationIds, GroupIds, ...boatData } = data;
 
-  if (data.scheduleIds && Array.isArray(data.scheduleIds) && data.scheduleIds.length > 0) {
-    await boat.addSchedules(data.scheduleIds);
+  const boat = await Boat.create(boatData);
+
+  if (ReservationIds) {
+    await boat.setReservations(ReservationIds);
   }
 
-  if (data.tripIds && Array.isArray(data.tripIds) && data.tripIds.length > 0) {
-    await boat.addTrips(data.tripIds);
+  if (GroupIds) {
+    await boat.setGroups(GroupIds);
   }
 
   return boat;
 };
 
+
 const update = async (id, data) => {
+  const { ReservationIds, GroupIds, ...boatData } = data;
+
   const boat = await Boat.findByPk(id);
   if (!boat) {
     throw new Error('Boat not found');
   }
 
-  await boat.update(data);
+  await boat.update(boatData);
 
-  if (data.scheduleIds && Array.isArray(data.scheduleIds) && data.scheduleIds.length > 0) {
-    await boat.setSchedules(data.scheduleIds);
+  if (ReservationIds) {
+    await boat.setReservations(ReservationIds);
   }
 
-  if (data.tripIds && Array.isArray(data.tripIds) && data.tripIds.length > 0) {
-    await boat.setTrips(data.tripIds);
+  if (GroupIds) {
+    await boat.setGroups(GroupIds);
   }
 
   return boat;
 };
+
 
 const deleteOne = async (id) => {
   const item = await Boat.findByPk(id);

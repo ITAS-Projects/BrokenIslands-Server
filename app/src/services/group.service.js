@@ -56,38 +56,41 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
-  const group = await Group.create(data);
+  const { PersonIds, TripIds, ...groupData } = data;
 
-  if (data.personIds && Array.isArray(data.personIds) && data.personIds.length > 0) {
-    await group.addPeople(data.personIds);
+  const group = await Group.create(groupData);
+
+  if (PersonIds) {
+    await group.setPeople(PersonIds); // 'People' = association alias for Person
   }
 
-  if (data.boatsIds && Array.isArray(data.boatsIds) && data.boatsIds.length > 0) {
-    await group.addBoats(data.boatsIds);
+  if (TripIds) {
+    await group.setTrips(TripIds);
   }
 
   return group;
 };
 
 const update = async (id, data) => {
+  const { PersonIds, TripIds, ...groupData } = data;
+
   const group = await Group.findByPk(id);
   if (!group) {
-    throw new Error('Schedule not found');
+    throw new Error('Group not found');
   }
 
-  await group.update(data);
+  await group.update(groupData);
 
-  if (data.personIds && Array.isArray(data.personIds)) {
-    await group.setPeople(data.personIds); // Replaces associations
+  if (PersonIds) {
+    await group.setPeople(PersonIds);
   }
 
-  if (data.boatsIds && Array.isArray(data.boatsIds)) {
-    await group.setBoats(data.boatsIds);
+  if (TripIds) {
+    await group.setTrips(TripIds);
   }
 
   return group;
 };
-
 
 const deleteOne = async (id) => {
   const group = await Group.findByPk(id);

@@ -4,7 +4,6 @@ const Boat = db.Boat;
 const Trip = db.Trip;
 const Group = db.Group;
 const Person = db.Person;
-const Taxi = db.Taxi;
 
 const getAll = async () => {
   return await Reservation.findAll({
@@ -53,13 +52,37 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
-  return await Reservation.create(data);
+  const { TripIds, ...reservationData } = data;
+
+  const reservation = await Reservation.create({
+    ...reservationData,
+  });
+
+  if (TripIds) {
+    await reservation.setTrips(TripIds);
+  }
+
+  return reservation;
 };
 
+
 const update = async (id, data) => {
-  const item = await Reservation.findByPk(id);
-  return await item.update(data);
+  const { TripIds, ...reservationData } = data;
+
+  const reservation = await Reservation.findByPk(id);
+  if (!reservation) {
+    throw new Error('Reservation not found');
+  }
+
+  await reservation.update(reservationData);
+
+  if (TripIds) {
+    await reservation.setTrips(TripIds);
+  }
+
+  return reservation;
 };
+
 
 const deleteOne = async (id) => {
   const item = await Reservation.findByPk(id);

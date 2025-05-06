@@ -46,38 +46,34 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
-  const person = await Person.create(data);
+  const { GroupIds, ...personData } = data;
 
-  if (data.scheduleIds && Array.isArray(data.scheduleIds) && data.scheduleIds.length > 0) {
-    await person.addSchedules(data.scheduleIds);
-  }
+  const person = await Person.create(personData);
 
-  if (data.tripIds && Array.isArray(data.tripIds) && data.tripIds.length > 0) {
-    await person.addTrips(data.tripIds);
+  if (GroupIds) {
+    await person.setGroups(GroupIds);
   }
 
   return person;
 };
 
-
 const update = async (id, data) => {
+  const { GroupIds, ...personData } = data;
+
   const person = await Person.findByPk(id);
   if (!person) {
     throw new Error('Person not found');
   }
 
-  await person.update(data);
+  await person.update(personData);
 
-  if (data.scheduleIds && Array.isArray(data.scheduleIds)) {
-    await person.setSchedules(data.scheduleIds);
-  }
-
-  if (data.tripIds && Array.isArray(data.tripIds)) {
-    await person.setTrips(data.tripIds);
+  if (GroupIds) {
+    await person.setGroups(GroupIds);
   }
 
   return person;
 };
+
 
 
 const deleteOne = async (id) => {

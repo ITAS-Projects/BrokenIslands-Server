@@ -72,37 +72,43 @@ const getById = async (id) => {
 
 
 const create = async (data) => {
-  const trip = await Trip.create(data);
+  const { GroupIds, ReservationIds, ...tripData } = data;
 
-  if (data.personIds && Array.isArray(data.personIds) && data.personIds.length > 0) {
-    await trip.addPeople(data.personIds);
+  const trip = await Trip.create(tripData);
+
+  if (GroupIds) {
+    await trip.setGroups(GroupIds);
   }
 
-  if (data.boatsIds && Array.isArray(data.boatsIds) && data.boatsIds.length > 0) {
-    await trip.addBoats(data.boatsIds);
+  if (ReservationIds) {
+    await trip.setReservations(ReservationIds);
   }
 
   return trip;
 };
 
+
 const update = async (id, data) => {
+  const { GroupIds, ReservationIds, ...tripData } = data;
+
   const trip = await Trip.findByPk(id);
   if (!trip) {
     throw new Error('Trip not found');
   }
 
-  await trip.update(data);
+  await trip.update(tripData);
 
-  if (data.personIds && Array.isArray(data.personIds)) {
-    await trip.setPeople(data.personIds); // Replaces associations
+  if (GroupIds) {
+    await trip.setGroups(GroupIds);
   }
 
-  if (data.boatsIds && Array.isArray(data.boatsIds)) {
-    await trip.setBoats(data.boatsIds);
+  if (ReservationIds) {
+    await trip.setReservations(ReservationIds);
   }
 
   return trip;
 };
+
 
 
 const deleteOne = async (id) => {

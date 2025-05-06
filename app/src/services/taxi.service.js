@@ -66,13 +66,34 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
-  return await Taxi.create(data);
+  const { TripIds, ...taxiData } = data;
+
+  const taxi = await Taxi.create(taxiData);
+
+  if (TripIds) {
+    await taxi.setTrips(TripIds);
+  }
+
+  return taxi;
 };
 
 const update = async (id, data) => {
-  const item = await Taxi.findByPk(id);
-  return await item.update(data);
+  const { TripIds, ...taxiData } = data;
+
+  const taxi = await Taxi.findByPk(id);
+  if (!taxi) {
+    throw new Error('Taxi not found');
+  }
+
+  await taxi.update(taxiData);
+
+  if (TripIds) {
+    await taxi.setTrips(TripIds);
+  }
+
+  return taxi;
 };
+
 
 const deleteOne = async (id) => {
   const item = await Taxi.findByPk(id);
