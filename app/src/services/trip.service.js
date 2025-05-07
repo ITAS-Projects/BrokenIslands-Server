@@ -25,6 +25,9 @@ const getAll = async () => {
         through: { attributes: [] },
         include: [
           {
+            model: Group,
+          },
+          {
             model: Boat,
           }
         ]
