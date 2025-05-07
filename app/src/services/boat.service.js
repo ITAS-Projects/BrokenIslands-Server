@@ -2,15 +2,33 @@ const db = require('../models');
 const Boat = db.Boat;
 const Reservation = db.Reservation;
 const Group = db.Group;
+const Person = db.Person;
 
 const getAll = async () => {
   return await Boat.findAll({
     include: [
       {
         model: Reservation,
+        include: [
+          {
+            model: Group,
+            include: [
+              {
+                model: Person,
+                as: 'leader'
+              }
+            ]
+          }
+        ]
       },
       {
         model: Group,
+        include: [
+          {
+            model: Person,
+            as: 'leader'
+          }
+        ]
       }
     ]
   });
@@ -21,9 +39,26 @@ const getById = async (id) => {
     include: [
       {
         model: Reservation,
+        include: [
+          {
+            model: Group,
+            include: [
+              {
+                model: Person,
+                as: 'leader'
+              }
+            ]
+          }
+        ]
       },
       {
         model: Group,
+        include: [
+          {
+            model: Person,
+            as: 'leader'
+          }
+        ]
       }
     ]
   });
