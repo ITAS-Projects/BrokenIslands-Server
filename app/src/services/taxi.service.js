@@ -55,6 +55,9 @@ const getById = async (id) => {
             through: { attributes: [] },
             include: [
               {
+                model: Group,
+              },
+              {
                 model: Boat,
               }
             ]
