@@ -4,6 +4,7 @@ const Group = db.Group;
 const Trip = db.Trip;
 const Taxi = db.Taxi;
 const Reservation = db.Reservation;
+const Person = db.Person;
 
 const getAll = async () => {
   return await Trip.findAll({
@@ -17,6 +18,10 @@ const getAll = async () => {
         include: [
           {
             model: Boat,
+          },
+          {
+            model: Person,
+            as: 'leader'
           }
         ]
       },
@@ -26,6 +31,12 @@ const getAll = async () => {
         include: [
           {
             model: Group,
+            include: [
+              {
+                model: Person,
+                as: 'leader'
+              }
+            ]
           },
           {
             model: Boat,
@@ -57,6 +68,10 @@ const getById = async (id) => {
         include: [
           {
             model: Boat,
+          },
+          {
+            model: Person,
+            as: 'leader'
           }
         ]
       },
@@ -64,6 +79,15 @@ const getById = async (id) => {
         model: Reservation,
         through: { attributes: [] },
         include: [
+          {
+            model: Group,
+            include: [
+              {
+                model: Person,
+                as: 'leader'
+              }
+            ]
+          },
           {
             model: Boat,
           },
