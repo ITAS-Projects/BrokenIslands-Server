@@ -90,9 +90,18 @@ const getById = async (id) => {
           },
           {
             model: Boat,
-          },
+          }
         ]
-      }
+      },
+      {
+        model: Group,
+        as: 'People',
+        include: [
+          {
+            model: Boat,
+          }
+        ]
+      },
     ]
   });
 };
