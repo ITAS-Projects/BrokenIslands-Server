@@ -3,13 +3,14 @@
   "version": "0.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.database.env ./src/server.js"
+    "start": "node ./src/server.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "mysql2": "^3.14.1",
     "sequelize": "^6.37.7",
