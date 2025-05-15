@@ -155,69 +155,266 @@ function selectTaxi(taxis, numberOfPeople, totalBoats) {
 }
 
 async function findOrCreateTrip({ day, schedule, time, numberOfPeople, totalBoats, taxiId }, transaction) {
-  const where = { day, timeFrame: schedule };
-  if (schedule.startsWith("Custom")) {
-    where.timeStart = time;
-  }
-
-  let trip = await Trip.findOne({
-    where,
-    include: [
-      {
-        model: Reservation,
-        include: [
-          { model: Group },
-          { model: Boat }
-        ]
-      },
-      { model: Taxi }
-    ],
-    transaction
-  });
-
-  if (trip) {
-    // Trip exists, check Taxi capacity
-    const existingPeople = trip.Reservations.reduce((sum, r) =>
-      sum + (r.Group?.numberOfPeople || 0), 0
-    );
-    const existingBoats = trip.Reservations.reduce((sum, r) =>
-      sum + r.Boats.reduce((bSum, b) => bSum + (b.numberOf || 0), 0), 0
-    );
-
-    const totalPeople = existingPeople + numberOfPeople;
-    const totalKayaks = existingBoats + totalBoats;
-
-    const taxi = trip.Taxi;
-
-    if (taxi.spaceForPeople < totalPeople || taxi.spaceForKayaks < totalKayaks) {
-      // Find the best fitting taxi for the new amount of people if it doesnt fit
-      const taxis = await Taxi.findAll(); // Fetch all available taxis
-      const bestTaxi = selectTaxi(taxis, totalPeople, totalKayaks);
-      
-      // Change the TaxiId
-      trip.TaxiId = bestTaxi.id;
-
-      // Save the trip so the used taxi is changed
-      await trip.save({ transaction });
+    const where = { day, timeFrame: schedule };
+    if (schedule.startsWith("Custom")) {
+        where.timeStart = time;
     }
 
-    return trip; // Return trip with the best fitting taxi
-  }
+    const { Op, fn, col, where: whereClause, cast } = require("sequelize");
 
-  // No trip for time and schedule, so create one
-  trip = await Trip.create({
-    day,
-    timeFrame: schedule,
-    timeStart: schedule.startsWith("Custom") ? time : undefined,
-    TaxiId: taxiId
-  }, { transaction });
+    let trip = await Trip.findOne({
+        where: {
+            timeFrame: schedule,
+            [Op.and]: [
+                whereClause(fn('DATE', col('day')), day)  // This strips time and compares date only
+            ],
+            ...(schedule.startsWith("Custom") && { timeStart: time })
+        },
+        include: [
+            {
+                model: Reservation,
+                include: [
+                    { model: Group },
+                    { model: Boat }
+                ]
+            },
+            { model: Taxi }
+        ],
+        transaction
+    });
 
-  return trip;
+    if (trip) {
+        // Trip exists, check Taxi capacity
+        const existingPeople = trip.Reservations.reduce((sum, r) =>
+            sum + (r.Group?.numberOfPeople || 0), 0
+        );
+        const existingBoats = trip.Reservations.reduce((sum, r) =>
+            sum + r.Boats.reduce((bSum, b) => bSum + (b.numberOf || 0), 0), 0
+        );
+
+        const totalPeople = existingPeople + numberOfPeople;
+        const totalKayaks = existingBoats + totalBoats;
+
+        const taxi = trip.Taxi;
+
+        if (taxi.spaceForPeople < totalPeople || taxi.spaceForKayaks < totalKayaks) {
+            // Find the best fitting taxi for the new amount of people if it doesnt fit
+            const taxis = await Taxi.findAll(); // Fetch all available taxis
+            const bestTaxi = selectTaxi(taxis, totalPeople, totalKayaks);
+
+            // Change the TaxiId
+            trip.TaxiId = bestTaxi.id;
+
+            // Save the trip so the used taxi is changed
+            await trip.save({ transaction });
+        }
+
+        return trip; // Return trip with the best fitting taxi
+    }
+
+    // No trip for time and schedule, so create one
+    trip = await Trip.create({
+        day,
+        timeFrame: schedule,
+        timeStart: schedule.startsWith("Custom") ? time : undefined,
+        TaxiId: taxiId
+    }, { transaction });
+
+    return trip;
 }
 
 const update = async (id, data) => {
-    throw ("Not implemented yet");
+    const transaction = await db.sequelize.transaction();
+    try {
+        const arrivalDay = data.trips[0].day?.split('T')[0];
+        const departureDay = data.trips[1].day?.split('T')[0];
+        const arrivalSchedule = data.trips[0].timeFrame;
+        const departureSchedule = data.trips[1].timeFrame;
+        const arrivalTime = data.trips[0].timeStart;
+        const departureTime = data.trips[1].timeStart;
+
+        const arrivalTrip = data.trips[0];
+        const departureTrip = data.trips[1];
+        const arrivalTaxiId = data.trips[0].TaxiId;
+        const departureTaxiId = data.trips[1].TaxiId;
+        
+        // Validate data
+        if (!arrivalDay || !departureDay) {
+            throw new Error("Please select both arrival and departure dates.");
+        }
+
+        if (!arrivalSchedule || !departureSchedule) {
+            throw new Error("Please select both arrival and departure schedules.");
+        }
+
+        if (arrivalSchedule.startsWith("Custom") && !arrivalTime) {
+            throw new Error("Please enter arrival time for custom schedule.");
+        }
+
+        if (departureSchedule.startsWith("Custom") && !departureTime) {
+            throw new Error("Please enter departure time for custom schedule.");
+        }
+
+        const arrivalTimeStr = resolveScheduleTime(arrivalSchedule, arrivalTime);
+        const departureTimeStr = resolveScheduleTime(departureSchedule, departureTime);
+
+        if (!arrivalTimeStr || !departureTimeStr) {
+            throw new Error("Both arrival and departure times must be defined.");
+        }
+
+        const arrivalDateTime = new Date(`${arrivalDay}T${arrivalTimeStr}`);
+        const departureDateTime = new Date(`${departureDay}T${departureTimeStr}`);
+
+        if (arrivalDateTime >= departureDateTime) {
+            throw new Error("Departure must be after arrival.");
+        }
+
+        if (data.numberOfPeople < 1 || !data.people?.[0]?.name) {
+            throw new Error("Please enter a valid group size and leader name.");
+        }
+
+        if (data.numberOfPeople < data.people?.length) {
+            throw new Error("There are too many people with data for the number of people stated.");
+        }
+
+        for (let person of data.people) {
+            if (!person.name) {
+                throw new Error("Each person must have a name.");
+            }
+        }
+
+        for (let boat of data.boats) {
+            if (!boat.type || boat.numberOf <= 0) {
+                throw new Error("Each boat group must have a valid type and count.");
+            }
+        }
+
+        // Fetch existing reservation
+        const reservation = await Reservation.findByPk(id, { include: [Group, Boat, Trip], transaction });
+        if (!reservation) {
+            throw new Error("Reservation not found.");
+        }
+
+        // Update group of people for reservation
+        const updatedGroup = await Group.findByPk(reservation.GroupId, { transaction });
+
+        // Update or create people
+        const updatedPeople = await Promise.all(
+            data.people.map(async (personMap) => {
+                let person;
+
+                if (personMap.id) {
+                    // Find existing person
+                    person = await Person.findByPk(personMap.id, { transaction });
+                    if (!person) {
+                        throw new Error(`Person with id ${personMap.id} not found`);
+                    }
+
+                    // Update the person
+                    await person.update(
+                        {
+                            name: personMap.name,
+                            allergies: personMap.allergies
+                        },
+                        { transaction }
+                    );
+                } else {
+                    // Create new person
+                    person = await Person.create(
+                        {
+                            name: personMap.name,
+                            allergies: personMap.allergies
+                        },
+                        { transaction }
+                    );
+                }
+
+                return person;
+            })
+        );
+
+        // Link all people to the group
+        await updatedGroup.setPeople(updatedPeople.map(p => p.id), { transaction });
+
+        // Update the group's numberOfPeople
+        await updatedGroup.update(
+            { numberOfPeople: data.numberOfPeople },
+            { transaction }
+        );
+
+        // Update or find trips for reservation
+        let updatedArrivalTrip;
+        if (arrivalTrip.id) {
+            updatedArrivalTrip = await Trip.findByPk(arrivalTrip.id, { transaction });
+            updatedArrivalTrip = await updatedArrivalTrip.update({
+                day: arrivalDay,
+                timeFrame: arrivalSchedule,
+                timeStart: arrivalTime,
+                TaxiId: arrivalTaxiId
+                },
+                { transaction }
+            );
+        } else {
+            updatedArrivalTrip = await Trip.create({
+                day: arrivalDay,
+                timeFrame: arrivalSchedule,
+                timeStart: arrivalTime,
+                TaxiId: arrivalTaxiId
+            }, { transaction });
+        }
+
+        let updatedDepartureTrip;
+        if (departureTrip.id) {
+            updatedDepartureTrip = await Trip.findByPk(departureTrip.id, { transaction });
+            updatedDepartureTrip = await updatedDepartureTrip.update({
+                day: departureDay,
+                timeFrame: departureSchedule,
+                timeStart: departureTime,
+                TaxiId: departureTaxiId
+                },
+                { transaction }
+            );
+        } else {
+            updatedDepartureTrip = await Trip.create({
+                day: departureDay,
+                timeFrame: departureSchedule,
+                timeStart: departureTime,
+                TaxiId: departureTaxiId
+            }, { transaction });
+        }
+
+        // Update reservation's trips
+        await reservation.setTrips([updatedArrivalTrip.id, updatedDepartureTrip.id], { transaction });
+
+        // Update boats linked to reservation
+        await Promise.all(data.boats.map(async (boatData) => {
+            if (boatData.id) {
+                await Boat.update({
+                    type: boatData.type,
+                    numberOf: boatData.numberOf,
+                    isRented: boatData.isRented
+                }, { where: { id: boatData.id }, transaction });
+            } else {
+                await Boat.create({
+                    type: boatData.type,
+                    numberOf: boatData.numberOf,
+                    isRented: boatData.isRented,
+                    ReservationId: reservation.id
+                }, { transaction });
+            }
+        }));
+
+        // Commit transaction
+        await transaction.commit();
+
+        return { id: reservation.id };
+    } catch (err) {
+        console.error("Error during reservation update:", err);
+        await transaction.rollback();
+        throw err;  // Re-throw to propagate the error
+    }
 };
+
 
 module.exports = {
     getById,
