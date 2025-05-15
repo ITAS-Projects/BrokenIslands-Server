@@ -18,6 +18,9 @@ app.use('/api/taxis', require('./routes/taxi'));
 app.use('/api/boats', require('./routes/boat'));
 app.use('/api/trips', require('./routes/trip'));
 
+
+app.use('/api/quick', require('./routes/quick'));
+
 db.sequelize.sync().then(() => {
   app.listen(8081, () => console.log('Server is running on http://localhost:8081'));
 });
