@@ -11,7 +11,7 @@ try{
 const requireAuth = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token){
-    return res.status(401).json({ error: 'Missing token' });
+    return res.status(401).json({ error: 'Missing token in request' });
   } 
 
   if (descopeClient == undefined) {
@@ -27,4 +27,22 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { requireAuth };
+const validateUserHasPermissions = (permissions) => { //[ 'User Admin', 'View People', 'View Reservation', 'Edit Reservation', 'View Taxi' ]
+  return async (req, res, next) => {
+    try {
+      const isPermissionValid = await descopeClient.validatePermissions(req.user, permissions);
+
+      if (isPermissionValid) {
+        next();
+      } else {
+        return res.status(403).json({ error: 'User doesn\'t have permission' });
+      }
+    } catch (error) {
+      console.error('Permission validation failed:', error);
+      return res.status(401).json({ error: 'Invalid user' });
+    }
+  };
+};
+
+
+module.exports = { requireAuth, validateUserHasPermissions };
