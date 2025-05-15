@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const tripController = require('../controllers/trip.controller');
+const { validateUserHasPermissions } = require('../middleware/auth');
 
 router.get('/', tripController.getAll);
 router.get('/:id', tripController.getById);
