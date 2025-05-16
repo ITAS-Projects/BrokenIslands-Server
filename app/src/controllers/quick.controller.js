@@ -24,3 +24,13 @@ exports.update = async (req, res) => {
     res.status(500).json({ error: err.message || 'Failed to edit reservation' });
   }
 };
+
+exports.delete = async (req, res) => {
+  try {
+    const data = await QuickService.delete(req.params.id);
+    res.status(201).json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Failed to delete reservation' });
+  }
+  }

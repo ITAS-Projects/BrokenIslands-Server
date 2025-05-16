@@ -415,9 +415,77 @@ const update = async (id, data) => {
     }
 };
 
+const deleteOne = async (id) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const reservation = await Reservation.findByPk(id, {
+            include: [
+                {
+                    model: Group,
+                    include: [Person]
+                },
+                {
+                    model: Boat,
+                },
+                {
+                    model: Trip
+                }
+            ],
+            transaction
+        });
+
+        if (!reservation) {
+            throw new Error("Reservation not found.");
+        }
+
+        // Collect Trip IDs before unlinking
+        const tripIds = reservation.Trips?.map(t => t.id) || [];
+
+        // Remove associated boats
+        await Boat.destroy({ where: { ReservationId: reservation.id }, transaction });
+
+        // Remove trip associations
+        await reservation.setTrips([], { transaction });
+
+        // Delete people
+        if (reservation.Group?.People?.length) {
+            const personIds = reservation.Group.People.map(p => p.id);
+            await Person.destroy({ where: { id: personIds }, transaction });
+        }
+
+        // Delete group
+        if (reservation.GroupId) {
+            await Group.destroy({ where: { id: reservation.GroupId }, transaction });
+        }
+
+        // Delete reservation
+        await Reservation.destroy({ where: { id }, transaction });
+
+        // Clean up orphaned trips (if no other reservations)
+        for (const tripId of tripIds) {
+            const trip = await Trip.findByPk(tripId, {
+                include: Reservation,
+                transaction
+            });
+
+            if (trip && trip.Reservations.length === 0) {
+                await trip.destroy({ transaction });
+            }
+        }
+
+        await transaction.commit();
+        return { success: true, message: `Reservation ${id} deleted.` };
+    } catch (err) {
+        console.error("Error during reservation deletion:", err);
+        await transaction.rollback();
+        throw err;
+    }
+};
+
 
 module.exports = {
     getById,
     create,
     update,
+    delete: deleteOne
 };

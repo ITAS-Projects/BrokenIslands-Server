@@ -6,5 +6,6 @@ const { validateUserHasPermissions } = require('../middleware/auth');
 router.get('/:id', validateUserHasPermissions(['View Reservation']), quickController.getById);
 router.post('/', validateUserHasPermissions(['Edit Reservation']), quickController.create);
 router.put('/:id', validateUserHasPermissions(['Edit Reservation']), quickController.update);
+router.delete('/:id', validateUserHasPermissions(['Edit Reservation']), quickController.delete);
 
 module.exports = router;
