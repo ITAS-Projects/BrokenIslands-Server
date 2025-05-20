@@ -4,10 +4,11 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const db = require('./models');
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth, validateUserHasPermissions } = require('./middleware/auth');
 
 app.use(cors());
 app.use(express.json());
+
 
 app.use(requireAuth);
 
@@ -18,8 +19,9 @@ app.use('/api/taxis', require('./routes/taxi'));
 app.use('/api/boats', require('./routes/boat'));
 app.use('/api/trips', require('./routes/trip'));
 
-
 app.use('/api/quick', require('./routes/quick'));
+
+app.use('/api/users', validateUserHasPermissions(["User Admin"]), require('./routes/user'));
 
 db.sequelize.sync().then(() => {
   app.listen(8081, () => console.log('Server is running on http://localhost:8081'));
