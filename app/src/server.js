@@ -22,6 +22,7 @@ app.use('/api/trips', require('./routes/trip'));
 app.use('/api/quick', require('./routes/quick'));
 
 app.use('/api/users', validateUserHasPermissions(["User Admin"]), require('./routes/user'));
+app.use('/api/roles', validateUserHasPermissions(["User Admin"]), require('./routes/roles'));
 
 db.sequelize.sync().then(() => {
   app.listen(8081, () => console.log('Server is running on http://localhost:8081'));
