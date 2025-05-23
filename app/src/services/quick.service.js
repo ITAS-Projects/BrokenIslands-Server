@@ -71,6 +71,10 @@ const create = async (data) => {
             throw new Error("Please enter a valid group size and leader name.");
         }
 
+        if (data.numberOfPeople < data.people?.length) {
+            throw new Error("There are too many people with data for the number of people stated.");
+        }
+
         for (let person of data.people) {
             if (!person.name) {
                 throw new Error("Each person must have a name.");
