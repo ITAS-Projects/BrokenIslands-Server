@@ -1,4 +1,4 @@
-const db = require('../models');
+const db = require("../models");
 const Reservation = db.Reservation;
 const Boat = db.Boat;
 const Trip = db.Trip;
@@ -7,489 +7,544 @@ const Group = db.Group;
 const Person = db.Person;
 
 const getById = async (id) => {
-    return await Reservation.findByPk(id, {
+  return await Reservation.findByPk(id, {
+    include: [
+      {
+        model: Group,
         include: [
-            {
-                model: Group,
-                include: [
-                    {
-                        model: Person,
-                        through: { attributes: [] }
-                    },
-                    {
-                        model: Person,
-                        as: 'leader'
-                    }
-                ]
-            },
-            {
-                model: Boat,
-            },
-            {
-                model: Trip,
-                through: { attributes: [] }
-            }
-        ]
-    });
+          {
+            model: Person,
+            through: { attributes: [] },
+          },
+          {
+            model: Person,
+            as: "leader",
+          },
+        ],
+      },
+      {
+        model: Boat,
+      },
+      {
+        model: Trip,
+        through: { attributes: [] },
+      },
+    ],
+  });
 };
 
 const create = async (data) => {
-    const transaction = await db.sequelize.transaction();
-    try {
-        // Backend validation logic
-        if (!data.arrivalDay || !data.departureDay) {
-            throw new Error("Please select both arrival and departure dates.");
-        }
+  const transaction = await db.sequelize.transaction();
+  try {
 
-        if (!data.arrivalSchedule || !data.departureSchedule) {
-            throw new Error("Please select both arrival and departure schedules.");
-        }
+    const arrivalCustom = data?.arrivalSchedule?.startsWith("Custom");
+    const departureCustom = data?.departureSchedule?.startsWith("Custom");
 
-        if (data.arrivalSchedule.startsWith("Custom") && !data.arrivalTime) {
-            throw new Error("Please enter arrival time for custom schedule.");
-        }
-
-        if (data.departureSchedule.startsWith("Custom") && !data.departureTime) {
-            throw new Error("Please enter departure time for custom schedule.");
-        }
-
-        const arrivalTimeStr = resolveScheduleTime(data.arrivalSchedule, data.arrivalTime);
-        const departureTimeStr = resolveScheduleTime(data.departureSchedule, data.departureTime);
-
-        if (!arrivalTimeStr || !departureTimeStr) {
-            throw new Error("Both arrival and departure times must be defined.");
-        }
-
-        const arrivalDateTime = new Date(`${data.arrivalDay}T${arrivalTimeStr}`);
-        const departureDateTime = new Date(`${data.departureDay}T${departureTimeStr}`);
-
-        if (arrivalDateTime >= departureDateTime) {
-            throw new Error("Departure must be after arrival.");
-        }
-
-        if (data.numberOfPeople < 1 || !data.people?.[0]?.name) {
-            throw new Error("Please enter a valid group size and leader name.");
-        }
-
-        if (data.numberOfPeople < data.people?.length) {
-            throw new Error("There are too many people with data for the number of people stated.");
-        }
-
-        for (let person of data.people) {
-            if (!person.name) {
-                throw new Error("Each person must have a name.");
-            }
-        }
-
-        for (let boat of data.boats) {
-            if (!boat.type || boat.numberOf <= 0) {
-                throw new Error("Each boat group must have a valid type and count.");
-            }
-        }
-
-        // Proceed with reservation creation if all validations pass
-        const { arrivalDay, departureDay, arrivalSchedule, departureSchedule, arrivalTime, departureTime, numberOfPeople, people, boats } = data;
-
-        // Create people for reservation
-        const createdPeople = await Promise.all(
-            people.map(personMap => Person.create({ name: personMap.name, allergies: personMap.allergies }, { transaction: transaction }))
-        );
-        const leaderId = createdPeople[0].id;
-
-        // Create group of people for reservation
-        const group = await Group.create({ numberOfPeople, GroupLeader: leaderId }, { transaction: transaction });
-        await group.setPeople(createdPeople, { transaction: transaction });
-
-        // Select taxi (get smallest taxi with enough space)
-        const taxis = await Taxi.findAll();
-        const totalBoats = boats.reduce((sum, boat) => sum + Number(boat.numberOf || 0), 0);
-        const selectedTaxi = selectTaxi(taxis, numberOfPeople, totalBoats);
-
-        // Find or create trips for reservation
-        const arrivalTrip = await findOrCreateTrip({ day: arrivalDay, schedule: arrivalSchedule, time: arrivalTime, numberOfPeople: numberOfPeople, totalBoats: totalBoats, taxiId: selectedTaxi.id }, transaction);
-        const departureTrip = await findOrCreateTrip({ day: departureDay, schedule: departureSchedule, time: departureTime, numberOfPeople: numberOfPeople, totalBoats: totalBoats, taxiId: selectedTaxi.id }, transaction);
-
-        // Create the reservation and link all data
-        const reservation = await Reservation.create({ GroupId: group.id }, { transaction: transaction });
-        await reservation.setTrips([arrivalTrip.id, departureTrip.id], { transaction: transaction });
-
-        // Create boats and link to reservation
-        await Promise.all(boats.map(boat =>
-            Boat.create({
-                type: boat.type,
-                numberOf: boat.numberOf,
-                isRented: boat.rented,
-                ReservationId: reservation.id
-            }, { transaction: transaction })
-        ));
-
-        // If no errors, and all data is created, save new reservation
-        await transaction.commit();
-        return { id: reservation.id };
-    } catch (err) {
-        console.error("Error during reservation creation:", err);  // Log the error
-        await transaction.rollback();
-        throw err;  // Re-throw to propagate the error
+    // Backend validation logic
+    if (!data.arrivalDay || !data.departureDay) {
+      throw new Error("Please select both arrival and departure dates.");
     }
-};
 
+    if (!data.arrivalSchedule || !data.departureSchedule) {
+      throw new Error("Please select both arrival and departure schedules.");
+    }
 
-function resolveScheduleTime(schedule, customTime) {
-    const scheduleToTime = {
-        "Lodge to Secret AM": "09:15",
-        "Secret to Lodge AM": "10:15",
-        "Lodge to Secret PM": "15:15",
-        "Secret to Lodge PM": "16:00"
+    if (arrivalCustom && !data.arrivalTime) {
+      throw new Error("Please enter arrival time for custom schedule.");
+    }
+
+    if (departureCustom && !data.departureTime) {
+      throw new Error("Please enter departure time for custom schedule.");
+    }
+
+    const arrivalTimeStr = resolveScheduleTime(data.arrivalSchedule, data.arrivalTime);
+    const departureTimeStr = resolveScheduleTime(data.departureSchedule, data.departureTime);
+
+    if (!arrivalTimeStr || !departureTimeStr) {
+      throw new Error("Both arrival and departure times must be defined.");
+    }
+
+    const arrivalDateTime = new Date(`${data.arrivalDay}T${arrivalTimeStr}`);
+    const departureDateTime = new Date(`${data.departureDay}T${departureTimeStr}`);
+
+    if (arrivalDateTime >= departureDateTime) {
+      throw new Error("Departure must be after arrival.");
+    }
+
+    if (data.numberOfPeople < 1 || !data.people?.[0]?.name) {
+      throw new Error("Please enter a valid group size and leader name.");
+    }
+
+    if (data.numberOfPeople < data.people?.length) {
+      throw new Error("There are too many people with data for the number of people stated.");
+    }
+
+    for (let person of data.people) {
+      if (!person.name) {
+        throw new Error("Each person must have a name.");
+      }
+    }
+
+    for (let boat of data.boats) {
+      if (!boat.type || boat.numberOf <= 0) {
+        throw new Error("Each boat group must have a valid type and count.");
+      }
+    }
+
+    // Proceed with reservation creation if all validations pass
+    const arrivalDay = data.arrivalDay;
+    const departureDay = data.departureDay;
+    const arrivalSchedule = data.arrivalSchedule;
+    const departureSchedule = data.departureSchedule;
+    const arrivalTime = data.arrivalTime;
+    const departureTime = data.departureTime;
+    const arrivalFromPlace = data.arrivalFromPlace;
+    const arrivalToPlace = data.arrivalToPlace;
+    const departureFromPlace = data.departureFromPlace;
+    const departureToPlace = data.departureToPlace;
+    const numberOfPeople = data.numberOfPeople;
+    const notes = data.notes;
+    const people = data.people;
+    const boats = data.boats;
+
+    // Create people for reservation
+    const createdPeople = await Promise.all(people.map((personMap) => Person.create({ name: personMap.name, allergies: personMap.allergies }, { transaction: transaction })));
+    const leaderId = createdPeople[0].id;
+
+    // Create group of people for reservation
+    const group = await Group.create({ numberOfPeople, GroupLeader: leaderId, notes }, { transaction: transaction });
+    await group.setPeople(createdPeople, { transaction: transaction });
+
+    // Select taxi (get smallest taxi with enough space)
+    const taxis = await Taxi.findAll();
+    if (taxis?.length < 1) {
+      throw new Error("No taxis found");
+    }
+
+    const totalBoats = boats.reduce((sum, boat) => sum + Number(boat.numberOf || 0), 0);
+    const selectedTaxi = selectTaxi(taxis, numberOfPeople, totalBoats);
+
+    // Find or create trips for reservation
+    const arrivalData = {
+      day: arrivalDay,
+      schedule: arrivalSchedule,
+      time: arrivalCustom ? arrivalTime : null,
+      numberOfPeople: numberOfPeople,
+      totalBoats: totalBoats, 
+      taxiId: selectedTaxi.id,
+      fromPlace: arrivalCustom ? arrivalFromPlace : "Secret Beach",
+      toPlace: arrivalCustom ? arrivalToPlace : "Lodge",
+    };
+    const departureData = {
+      day: departureDay,
+      schedule: departureSchedule,
+      time: departureCustom ? departureTime : null,
+      totalBoats: totalBoats, 
+      taxiId: selectedTaxi.id,
+      fromPlace: departureCustom ? departureFromPlace : "Lodge",
+      toPlace: departureCustom ? departureToPlace : "Secret Beach",
     };
 
-    if (schedule.startsWith("Custom")) {
-        return customTime || null;
-    }
+    const arrivalTrip = await findOrCreateTrip(arrivalData, transaction);
+    const departureTrip = await findOrCreateTrip(departureData, transaction);
 
-    return scheduleToTime[schedule] || null;
+    // Create the reservation and link all data
+    const reservation = await Reservation.create({ GroupId: group.id }, { transaction: transaction });
+    await reservation.setTrips([arrivalTrip.id, departureTrip.id], { transaction: transaction });
+
+    // Create boats and link to reservation
+    await Promise.all(
+      boats.map((boat) =>
+        Boat.create(
+          {
+            type: boat.type,
+            numberOf: boat.numberOf,
+            isRented: boat.rented,
+            ReservationId: reservation.id,
+          },
+          { transaction: transaction }
+        )
+      )
+    );
+
+    // If no errors, and all data is created, save new reservation
+    await transaction.commit();
+    return { id: reservation.id };
+  } catch (err) {
+    console.error("Error during reservation creation:", err); // Log the error
+    await transaction.rollback();
+    throw err; // Re-throw to propagate the error
+  }
 };
 
-function selectTaxi(taxis, numberOfPeople, totalBoats) {
-    // return the smallest taxi with enough space, or the largest taxi if not enough
-    const valid = taxis.filter(taxi => taxi.spaceForKayaks >= totalBoats && taxi.spaceForPeople >= numberOfPeople);
-    if (valid.length > 0) {
-        return valid.reduce((min, taxi) => taxi.spaceForKayaks < min.spaceForKayaks ? taxi : min, valid[0]);
-    }
-    return taxis.sort((a, b) => b.spaceForKayaks - a.spaceForKayaks)[0]; // Fallback
+function resolveScheduleTime(schedule, customTime) {
+  const scheduleToTime = {
+    "Lodge to Secret AM": "09:15",
+    "Secret to Lodge AM": "10:15",
+    "Lodge to Secret PM": "15:15",
+    "Secret to Lodge PM": "16:00",
+  };
+
+  if (schedule.startsWith("Custom")) {
+    return customTime || null;
+  }
+
+  return scheduleToTime[schedule] || null;
 }
 
-async function findOrCreateTrip({ day, schedule, time, numberOfPeople, totalBoats, taxiId }, transaction) {
-    const where = { day, timeFrame: schedule };
-    if (schedule.startsWith("Custom")) {
-        where.timeStart = time;
+function selectTaxi(taxis, numberOfPeople, totalBoats) {
+  // return the smallest taxi with enough space, or the largest taxi if not enough
+  const valid = taxis.filter((taxi) => taxi.spaceForKayaks >= totalBoats && taxi.spaceForPeople >= numberOfPeople);
+  if (valid.length > 0) {
+    return valid.reduce((min, taxi) => (taxi.spaceForKayaks < min.spaceForKayaks ? taxi : min), valid[0]);
+  }
+  return taxis.sort((a, b) => b.spaceForKayaks - a.spaceForKayaks)[0]; // Fallback
+}
+
+async function findOrCreateTrip({ day, schedule, time, numberOfPeople, totalBoats, taxiId, fromPlace, toPlace }, transaction) {
+  const where = { day, timeFrame: schedule };
+  if (schedule.startsWith("Custom")) {
+    where.timeStart = time;
+    where.fromPlace = fromPlace;
+    where.toPlace = toPlace;
+  }
+
+  const { Op, fn, col, where: whereClause, cast } = require("sequelize");
+
+  let trip = await Trip.findOne({
+    where: {
+      timeFrame: schedule,
+      [Op.and]: [
+        whereClause(fn("DATE", col("day")), day), // This strips time and compares date only
+      ],
+      ...(schedule.startsWith("Custom") && { timeStart: time }),
+    },
+    include: [
+      {
+        model: Reservation,
+        include: [{ model: Group }, { model: Boat }],
+      },
+      { model: Taxi },
+    ],
+    transaction,
+  });
+
+  if (trip) {
+    // Trip exists, check Taxi capacity
+    const existingPeople = trip.Reservations.reduce((sum, r) => sum + (r.Group?.numberOfPeople || 0), 0);
+    const existingBoats = trip.Reservations.reduce((sum, r) => sum + r.Boats.reduce((bSum, b) => bSum + (b.numberOf || 0), 0), 0);
+
+    const totalPeople = existingPeople + numberOfPeople;
+    const totalKayaks = existingBoats + totalBoats;
+
+    const taxi = trip.Taxi;
+
+    if (taxi.spaceForPeople < totalPeople || taxi.spaceForKayaks < totalKayaks) {
+      // Find the best fitting taxi for the new amount of people if it doesnt fit
+      const taxis = await Taxi.findAll(); // Fetch all available taxis
+      const bestTaxi = selectTaxi(taxis, totalPeople, totalKayaks);
+
+      // Change the TaxiId
+      trip.TaxiId = bestTaxi.id;
+
+      // Save the trip so the used taxi is changed
+      await trip.save({ transaction });
     }
 
-    const { Op, fn, col, where: whereClause, cast } = require("sequelize");
+    return trip; // Return trip with the best fitting taxi
+  }
 
-    let trip = await Trip.findOne({
-        where: {
-            timeFrame: schedule,
-            [Op.and]: [
-                whereClause(fn('DATE', col('day')), day)  // This strips time and compares date only
-            ],
-            ...(schedule.startsWith("Custom") && { timeStart: time })
-        },
-        include: [
-            {
-                model: Reservation,
-                include: [
-                    { model: Group },
-                    { model: Boat }
-                ]
-            },
-            { model: Taxi }
-        ],
-        transaction
-    });
+  // No trip for time and schedule, so create one
+  trip = await Trip.create(
+    {
+      day,
+      timeFrame: schedule,
+      timeStart: schedule.startsWith("Custom") ? time : undefined,
+      TaxiId: taxiId,
+      fromPlace: fromPlace,
+      toPlace: toPlace
+    },
+    { transaction }
+  );
 
-    if (trip) {
-        // Trip exists, check Taxi capacity
-        const existingPeople = trip.Reservations.reduce((sum, r) =>
-            sum + (r.Group?.numberOfPeople || 0), 0
-        );
-        const existingBoats = trip.Reservations.reduce((sum, r) =>
-            sum + r.Boats.reduce((bSum, b) => bSum + (b.numberOf || 0), 0), 0
-        );
-
-        const totalPeople = existingPeople + numberOfPeople;
-        const totalKayaks = existingBoats + totalBoats;
-
-        const taxi = trip.Taxi;
-
-        if (taxi.spaceForPeople < totalPeople || taxi.spaceForKayaks < totalKayaks) {
-            // Find the best fitting taxi for the new amount of people if it doesnt fit
-            const taxis = await Taxi.findAll(); // Fetch all available taxis
-            const bestTaxi = selectTaxi(taxis, totalPeople, totalKayaks);
-
-            // Change the TaxiId
-            trip.TaxiId = bestTaxi.id;
-
-            // Save the trip so the used taxi is changed
-            await trip.save({ transaction });
-        }
-
-        return trip; // Return trip with the best fitting taxi
-    }
-
-    // No trip for time and schedule, so create one
-    trip = await Trip.create({
-        day,
-        timeFrame: schedule,
-        timeStart: schedule.startsWith("Custom") ? time : undefined,
-        TaxiId: taxiId
-    }, { transaction });
-
-    return trip;
+  return trip;
 }
 
 const update = async (id, data) => {
-    const transaction = await db.sequelize.transaction();
-    try {
-        const arrivalDay = data.trips[0].day?.split('T')[0];
-        const departureDay = data.trips[1].day?.split('T')[0];
-        const arrivalSchedule = data.trips[0].timeFrame;
-        const departureSchedule = data.trips[1].timeFrame;
-        const arrivalTime = data.trips[0].timeStart;
-        const departureTime = data.trips[1].timeStart;
+  const transaction = await db.sequelize.transaction();
+  try {
+    const arrivalDay = data.trips[0].day?.split("T")[0];
+    const departureDay = data.trips[1].day?.split("T")[0];
+    const arrivalSchedule = data.trips[0].timeFrame;
+    const departureSchedule = data.trips[1].timeFrame;
+    const arrivalTime = data.trips[0].timeStart;
+    const departureTime = data.trips[1].timeStart;
+    const arrivalFromPlace = data.trips[0].fromPlace;
+    const arrivalToPlace = data.trips[0].toPlace;
+    const departureFromPlace = data.trips[1].fromPlace;
+    const departureToPlace = data.trips[1].toPlace;
 
-        const arrivalTrip = data.trips[0];
-        const departureTrip = data.trips[1];
-        const arrivalTaxiId = data.trips[0].TaxiId;
-        const departureTaxiId = data.trips[1].TaxiId;
-        
-        // Validate data
-        if (!arrivalDay || !departureDay) {
-            throw new Error("Please select both arrival and departure dates.");
-        }
+    const arrivalTrip = data.trips[0];
+    const departureTrip = data.trips[1];
+    const arrivalTaxiId = data.trips[0].TaxiId;
+    const departureTaxiId = data.trips[1].TaxiId;
 
-        if (!arrivalSchedule || !departureSchedule) {
-            throw new Error("Please select both arrival and departure schedules.");
-        }
+    const arrivalCustom = arrivalSchedule.startsWith("Custom");
+    const departureCustom = departureSchedule.startsWith("Custom");
 
-        if (arrivalSchedule.startsWith("Custom") && !arrivalTime) {
-            throw new Error("Please enter arrival time for custom schedule.");
-        }
-
-        if (departureSchedule.startsWith("Custom") && !departureTime) {
-            throw new Error("Please enter departure time for custom schedule.");
-        }
-
-        const arrivalTimeStr = resolveScheduleTime(arrivalSchedule, arrivalTime);
-        const departureTimeStr = resolveScheduleTime(departureSchedule, departureTime);
-
-        if (!arrivalTimeStr || !departureTimeStr) {
-            throw new Error("Both arrival and departure times must be defined.");
-        }
-
-        const arrivalDateTime = new Date(`${arrivalDay}T${arrivalTimeStr}`);
-        const departureDateTime = new Date(`${departureDay}T${departureTimeStr}`);
-
-        if (arrivalDateTime >= departureDateTime) {
-            throw new Error("Departure must be after arrival.");
-        }
-
-        if (data.numberOfPeople < 1 || !data.people?.[0]?.name) {
-            throw new Error("Please enter a valid group size and leader name.");
-        }
-
-        if (data.numberOfPeople < data.people?.length) {
-            throw new Error("There are too many people with data for the number of people stated.");
-        }
-
-        for (let person of data.people) {
-            if (!person.name) {
-                throw new Error("Each person must have a name.");
-            }
-        }
-
-        for (let boat of data.boats) {
-            if (!boat.type || boat.numberOf <= 0) {
-                throw new Error("Each boat group must have a valid type and count.");
-            }
-        }
-
-        // Fetch existing reservation
-        const reservation = await Reservation.findByPk(id, { include: [Group, Boat, Trip], transaction });
-        if (!reservation) {
-            throw new Error("Reservation not found.");
-        }
-
-        // Update group of people for reservation
-        const updatedGroup = await Group.findByPk(reservation.GroupId, { transaction });
-
-        // Update or create people
-        const updatedPeople = await Promise.all(
-            data.people.map(async (personMap) => {
-                let person;
-
-                if (personMap.id) {
-                    // Find existing person
-                    person = await Person.findByPk(personMap.id, { transaction });
-                    if (!person) {
-                        throw new Error(`Person with id ${personMap.id} not found`);
-                    }
-
-                    // Update the person
-                    await person.update(
-                        {
-                            name: personMap.name,
-                            allergies: personMap.allergies
-                        },
-                        { transaction }
-                    );
-                } else {
-                    // Create new person
-                    person = await Person.create(
-                        {
-                            name: personMap.name,
-                            allergies: personMap.allergies
-                        },
-                        { transaction }
-                    );
-                }
-
-                return person;
-            })
-        );
-
-        // Link all people to the group
-        await updatedGroup.setPeople(updatedPeople.map(p => p.id), { transaction });
-
-        // Update the group's numberOfPeople
-        await updatedGroup.update(
-            { numberOfPeople: data.numberOfPeople },
-            { transaction }
-        );
-
-        // Update or find trips for reservation
-        let updatedArrivalTrip;
-        if (arrivalTrip.id) {
-            updatedArrivalTrip = await Trip.findByPk(arrivalTrip.id, { transaction });
-            updatedArrivalTrip = await updatedArrivalTrip.update({
-                day: arrivalDay,
-                timeFrame: arrivalSchedule,
-                timeStart: arrivalTime,
-                TaxiId: arrivalTaxiId
-                },
-                { transaction }
-            );
-        } else {
-            updatedArrivalTrip = await Trip.create({
-                day: arrivalDay,
-                timeFrame: arrivalSchedule,
-                timeStart: arrivalTime,
-                TaxiId: arrivalTaxiId
-            }, { transaction });
-        }
-
-        let updatedDepartureTrip;
-        if (departureTrip.id) {
-            updatedDepartureTrip = await Trip.findByPk(departureTrip.id, { transaction });
-            updatedDepartureTrip = await updatedDepartureTrip.update({
-                day: departureDay,
-                timeFrame: departureSchedule,
-                timeStart: departureTime,
-                TaxiId: departureTaxiId
-                },
-                { transaction }
-            );
-        } else {
-            updatedDepartureTrip = await Trip.create({
-                day: departureDay,
-                timeFrame: departureSchedule,
-                timeStart: departureTime,
-                TaxiId: departureTaxiId
-            }, { transaction });
-        }
-
-        // Update reservation's trips
-        await reservation.setTrips([updatedArrivalTrip.id, updatedDepartureTrip.id], { transaction });
-
-        // Update boats linked to reservation
-        await Promise.all(data.boats.map(async (boatData) => {
-            if (boatData.id) {
-                await Boat.update({
-                    type: boatData.type,
-                    numberOf: boatData.numberOf,
-                    isRented: boatData.isRented
-                }, { where: { id: boatData.id }, transaction });
-            } else {
-                await Boat.create({
-                    type: boatData.type,
-                    numberOf: boatData.numberOf,
-                    isRented: boatData.isRented,
-                    ReservationId: reservation.id
-                }, { transaction });
-            }
-        }));
-
-        // Commit transaction
-        await transaction.commit();
-
-        return { id: reservation.id };
-    } catch (err) {
-        console.error("Error during reservation update:", err);
-        await transaction.rollback();
-        throw err;  // Re-throw to propagate the error
+    // Validate data
+    if (!arrivalDay || !departureDay) {
+      throw new Error("Please select both arrival and departure dates.");
     }
+
+    if (!arrivalSchedule || !departureSchedule) {
+      throw new Error("Please select both arrival and departure schedules.");
+    }
+
+    if (arrivalCustom && !arrivalTime) {
+      throw new Error("Please enter arrival time for custom schedule.");
+    }
+
+    if (departureCustom && !departureTime) {
+      throw new Error("Please enter departure time for custom schedule.");
+    }
+
+    const arrivalTimeStr = resolveScheduleTime(arrivalSchedule, arrivalTime);
+    const departureTimeStr = resolveScheduleTime(departureSchedule, departureTime);
+
+    if (!arrivalTimeStr || !departureTimeStr) {
+      throw new Error("Both arrival and departure times must be defined.");
+    }
+
+    const arrivalDateTime = new Date(`${arrivalDay}T${arrivalTimeStr}`);
+    const departureDateTime = new Date(`${departureDay}T${departureTimeStr}`);
+
+    if (arrivalDateTime >= departureDateTime) {
+      throw new Error("Departure must be after arrival.");
+    }
+
+    if (data.numberOfPeople < 1 || !data.people?.[0]?.name) {
+      throw new Error("Please enter a valid group size and leader name.");
+    }
+
+    if (data.numberOfPeople < data.people?.length) {
+      throw new Error("There are too many people with data for the number of people stated.");
+    }
+
+    for (let person of data.people) {
+      if (!person.name) {
+        throw new Error("Each person must have a name.");
+      }
+    }
+
+    for (let boat of data.boats) {
+      if (!boat.type || boat.numberOf <= 0) {
+        throw new Error("Each boat group must have a valid type and count.");
+      }
+    }
+
+    // Fetch existing reservation
+    const reservation = await Reservation.findByPk(id, { include: [Group, Boat, Trip], transaction });
+    if (!reservation) {
+      throw new Error("Reservation not found.");
+    }
+
+    // Update group of people for reservation
+    const updatedGroup = await Group.findByPk(reservation.GroupId, { transaction });
+
+    // Update or create people
+    const updatedPeople = await Promise.all(
+      data.people.map(async (personMap) => {
+        let person;
+
+        if (personMap.id) {
+          // Find existing person
+          person = await Person.findByPk(personMap.id, { transaction });
+          if (!person) {
+            throw new Error(`Person with id ${personMap.id} not found`);
+          }
+
+          // Update the person
+          await person.update(
+            {
+              name: personMap.name,
+              allergies: personMap.allergies,
+            },
+            { transaction }
+          );
+        } else {
+          // Create new person
+          person = await Person.create(
+            {
+              name: personMap.name,
+              allergies: personMap.allergies,
+            },
+            { transaction }
+          );
+        }
+
+        return person;
+      })
+    );
+
+    // Link all people to the group
+    await updatedGroup.setPeople(
+      updatedPeople.map((p) => p.id),
+      { transaction }
+    );
+
+    // Update the group's numberOfPeople
+    await updatedGroup.update({ numberOfPeople: data.numberOfPeople, notes: data.notes }, { transaction });
+
+    // Update or find trips for reservation
+    let updatedArrivalTrip;
+    const arrivalData = {
+      day: arrivalDay,
+      timeFrame: arrivalSchedule,
+      timeStart: arrivalCustom ? arrivalTime : null,
+      TaxiId: arrivalTaxiId,
+      fromPlace: arrivalCustom ? arrivalFromPlace : "Secret Beach",
+      toPlace: arrivalCustom ? arrivalToPlace : "Lodge",
+    };
+    if (arrivalTrip.id) {
+      updatedArrivalTrip = await Trip.findByPk(arrivalTrip.id, { transaction });
+      updatedArrivalTrip = await updatedArrivalTrip.update(arrivalData, {
+        transaction,
+        fields: Object.keys(arrivalData),
+      });
+    } else {
+      updatedArrivalTrip = await Trip.create(arrivalData, { transaction });
+    }
+
+    let updatedDepartureTrip;
+    const departureData = {
+      day: departureDay,
+      timeFrame: departureSchedule,
+      timeStart: departureCustom ? departureTime : null,
+      TaxiId: departureTaxiId,
+      fromPlace: departureCustom ? departureFromPlace : "Lodge",
+      toPlace: departureCustom ? departureToPlace : "Secret Beach",
+    };
+    if (departureTrip.id) {
+      updatedDepartureTrip = await Trip.findByPk(departureTrip.id, { transaction });
+      updatedDepartureTrip = await updatedDepartureTrip.update(departureData, {
+        transaction,
+        fields: Object.keys(departureData),
+      });
+    } else {
+      updatedDepartureTrip = await Trip.create(departureData, { transaction });
+    }
+
+    // Update reservation's trips
+    await reservation.setTrips([updatedArrivalTrip.id, updatedDepartureTrip.id], { transaction });
+
+    // Update boats linked to reservation
+    await Promise.all(
+      data.boats.map(async (boatData) => {
+        if (boatData.id) {
+          await Boat.update(
+            {
+              type: boatData.type,
+              numberOf: boatData.numberOf,
+              isRented: boatData.isRented,
+            },
+            { where: { id: boatData.id }, transaction }
+          );
+        } else {
+          await Boat.create(
+            {
+              type: boatData.type,
+              numberOf: boatData.numberOf,
+              isRented: boatData.isRented,
+              ReservationId: reservation.id,
+            },
+            { transaction }
+          );
+        }
+      })
+    );
+
+    // Commit transaction
+    await transaction.commit();
+
+    return { id: reservation.id };
+  } catch (err) {
+    console.error("Error during reservation update:", err);
+    await transaction.rollback();
+    throw err; // Re-throw to propagate the error
+  }
 };
 
 const deleteOne = async (id) => {
-    const transaction = await db.sequelize.transaction();
-    try {
-        const reservation = await Reservation.findByPk(id, {
-            include: [
-                {
-                    model: Group,
-                    include: [Person]
-                },
-                {
-                    model: Boat,
-                },
-                {
-                    model: Trip
-                }
-            ],
-            transaction
-        });
+  const transaction = await db.sequelize.transaction();
+  try {
+    const reservation = await Reservation.findByPk(id, {
+      include: [
+        {
+          model: Group,
+          include: [Person],
+        },
+        {
+          model: Boat,
+        },
+        {
+          model: Trip,
+        },
+      ],
+      transaction,
+    });
 
-        if (!reservation) {
-            throw new Error("Reservation not found.");
-        }
-
-        // Collect Trip IDs before unlinking
-        const tripIds = reservation.Trips?.map(t => t.id) || [];
-
-        // Remove associated boats
-        await Boat.destroy({ where: { ReservationId: reservation.id }, transaction });
-
-        // Remove trip associations
-        await reservation.setTrips([], { transaction });
-
-        // Delete people
-        if (reservation.Group?.People?.length) {
-            const personIds = reservation.Group.People.map(p => p.id);
-            await Person.destroy({ where: { id: personIds }, transaction });
-        }
-
-        // Delete group
-        if (reservation.GroupId) {
-            await Group.destroy({ where: { id: reservation.GroupId }, transaction });
-        }
-
-        // Delete reservation
-        await Reservation.destroy({ where: { id }, transaction });
-
-        // Clean up orphaned trips (if no other reservations)
-        for (const tripId of tripIds) {
-            const trip = await Trip.findByPk(tripId, {
-                include: Reservation,
-                transaction
-            });
-
-            if (trip && trip.Reservations.length === 0) {
-                await trip.destroy({ transaction });
-            }
-        }
-
-        await transaction.commit();
-        return { success: true, message: `Reservation ${id} deleted.` };
-    } catch (err) {
-        console.error("Error during reservation deletion:", err);
-        await transaction.rollback();
-        throw err;
+    if (!reservation) {
+      throw new Error("Reservation not found.");
     }
+
+    // Collect Trip IDs before unlinking
+    const tripIds = reservation.Trips?.map((t) => t.id) || [];
+
+    // Remove associated boats
+    await Boat.destroy({ where: { ReservationId: reservation.id }, transaction });
+
+    // Remove trip associations
+    await reservation.setTrips([], { transaction });
+
+    // Delete people
+    if (reservation.Group?.People?.length) {
+      const personIds = reservation.Group.People.map((p) => p.id);
+      await Person.destroy({ where: { id: personIds }, transaction });
+    }
+
+    // Delete group
+    if (reservation.GroupId) {
+      await Group.destroy({ where: { id: reservation.GroupId }, transaction });
+    }
+
+    // Delete reservation
+    await Reservation.destroy({ where: { id }, transaction });
+
+    // Clean up orphaned trips (if no other reservations)
+    for (const tripId of tripIds) {
+      const trip = await Trip.findByPk(tripId, {
+        include: Reservation,
+        transaction,
+      });
+
+      if (trip && trip.Reservations.length === 0) {
+        await trip.destroy({ transaction });
+      }
+    }
+
+    await transaction.commit();
+    return { success: true, message: `Reservation ${id} deleted.` };
+  } catch (err) {
+    console.error("Error during reservation deletion:", err);
+    await transaction.rollback();
+    throw err;
+  }
 };
 
-
 module.exports = {
-    getById,
-    create,
-    update,
-    delete: deleteOne
+  getById,
+  create,
+  update,
+  delete: deleteOne,
 };

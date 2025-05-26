@@ -67,6 +67,7 @@ const update = async (descope, id, data) => {
         }
         
         // Send the list of users as a JSON response
+        const unload = await descope?.management?.user?.logoutUserByUserId(id);
         return result.data;  // Assuming result.data is the actual data array
     } catch (error) {
         // Optionally, send the error details for debugging purposes (in production, avoid this)
@@ -86,6 +87,7 @@ const deleteMany = async (descope, ids) => {
                 throw new Error(result?.error?.errorDescription || "Unknown Error Occured");
             }
 
+            const unload = await descope?.management?.user?.logoutUserByUserId(id);
             results.push({ id, success: true });
         } catch (err) {
             console.error(`Failed to delete user ${id}:`, err);

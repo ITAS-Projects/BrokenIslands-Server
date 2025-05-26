@@ -1,7 +1,8 @@
 module.exports = (sequelize, DataTypes) => {
   const Group = sequelize.define('Group', {
     numberOfPeople: DataTypes.INTEGER,                                      // the number of people that are in the group, including those without information
-    seperatePeople: DataTypes.BOOLEAN
+    seperatePeople: DataTypes.BOOLEAN,
+    notes: DataTypes.STRING
   });
 
   Group.associate = (models) => {
