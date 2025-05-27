@@ -125,10 +125,14 @@ const create = async (data) => {
     const selectedTaxi = selectTaxi(taxis, numberOfPeople, totalBoats);
 
     // Find or create trips for reservation
+    console.log(arrivalTimeStr);
+    console.log(data.arrivalSchedule)
+    console.log(data.arrivalTime)
+    console.log(departureTimeStr);
     const arrivalData = {
       day: arrivalDay,
       schedule: arrivalSchedule,
-      time: arrivalCustom ? arrivalTime : null,
+      time: arrivalTimeStr,
       numberOfPeople: numberOfPeople,
       totalBoats: totalBoats, 
       taxiId: selectedTaxi.id,
@@ -138,7 +142,7 @@ const create = async (data) => {
     const departureData = {
       day: departureDay,
       schedule: departureSchedule,
-      time: departureCustom ? departureTime : null,
+      time: departureTimeStr,
       totalBoats: totalBoats, 
       taxiId: selectedTaxi.id,
       fromPlace: departureCustom ? departureFromPlace : "Lodge",
@@ -179,10 +183,10 @@ const create = async (data) => {
 
 function resolveScheduleTime(schedule, customTime) {
   const scheduleToTime = {
-    "Lodge to Secret AM": "09:15",
-    "Secret to Lodge AM": "10:15",
-    "Lodge to Secret PM": "15:15",
-    "Secret to Lodge PM": "16:00",
+    "Lodge to Secret AM": "09:15:00",
+    "Secret to Lodge AM": "10:15:00",
+    "Lodge to Secret PM": "15:15:00",
+    "Secret to Lodge PM": "16:00:00",
   };
 
   if (schedule.startsWith("Custom")) {
@@ -259,7 +263,7 @@ async function findOrCreateTrip({ day, schedule, time, numberOfPeople, totalBoat
     {
       day,
       timeFrame: schedule,
-      timeStart: schedule.startsWith("Custom") ? time : undefined,
+      timeStart: time,
       TaxiId: taxiId,
       fromPlace: fromPlace,
       toPlace: toPlace
@@ -401,7 +405,7 @@ const update = async (id, data) => {
     const arrivalData = {
       day: arrivalDay,
       timeFrame: arrivalSchedule,
-      timeStart: arrivalCustom ? arrivalTime : null,
+      timeStart: arrivalTimeStr,
       TaxiId: arrivalTaxiId,
       fromPlace: arrivalCustom ? arrivalFromPlace : "Secret Beach",
       toPlace: arrivalCustom ? arrivalToPlace : "Lodge",
@@ -420,7 +424,7 @@ const update = async (id, data) => {
     const departureData = {
       day: departureDay,
       timeFrame: departureSchedule,
-      timeStart: departureCustom ? departureTime : null,
+      timeStart: departureTimeStr,
       TaxiId: departureTaxiId,
       fromPlace: departureCustom ? departureFromPlace : "Lodge",
       toPlace: departureCustom ? departureToPlace : "Secret Beach",
