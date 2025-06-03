@@ -29,6 +29,7 @@ db.sequelize = sequelize;
 
 db.Person = require('./person')(sequelize, DataTypes);
 db.Reservation = require('./reservation')(sequelize, DataTypes);
+db.ReservationTrip = require('./reservationTrip')(sequelize, DataTypes);
 db.Group = require('./group')(sequelize, DataTypes);
 db.Taxi = require('./taxi')(sequelize, DataTypes);
 db.Boat = require('./boat')(sequelize, DataTypes);

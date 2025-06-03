@@ -5,6 +5,7 @@ const Trip = db.Trip;
 const Taxi = db.Taxi;
 const Group = db.Group;
 const Person = db.Person;
+const ReservationTrip = db.ReservationTrip;
 
 const getById = async (id) => {
   return await Reservation.findByPk(id, {
@@ -27,7 +28,7 @@ const getById = async (id) => {
       },
       {
         model: Trip,
-        through: { attributes: [] },
+        through: { attributes: ['typeOfTrip'] },
       },
     ],
   });
@@ -189,7 +190,7 @@ function resolveScheduleTime(schedule, customTime) {
     "Secret to Lodge PM": "16:00:00",
   };
 
-  if (schedule.startsWith("Custom")) {
+  if (schedule.startsWith("Custom") || schedule.startsWith("Paddle")) {
     return customTime || null;
   }
 
@@ -296,6 +297,9 @@ const update = async (id, data) => {
     const arrivalCustom = arrivalSchedule.startsWith("Custom");
     const departureCustom = departureSchedule.startsWith("Custom");
 
+    const arrivalPaddle = arrivalSchedule.startsWith("Paddle");
+    const departurePaddle = departureSchedule.startsWith("Paddle");
+
     // Validate data
     if (!arrivalDay || !departureDay) {
       throw new Error("Please select both arrival and departure dates.");
@@ -318,6 +322,14 @@ const update = async (id, data) => {
 
     if (!arrivalTimeStr || !departureTimeStr) {
       throw new Error("Both arrival and departure times must be defined.");
+    }
+
+    if (!arrivalPaddle && !arrivalTaxiId ) {
+      throw new Error("Plese select a taxi to use for the arrival trip.");
+    }
+
+    if (!departurePaddle && !departureTaxiId ) {
+      throw new Error("Plese select a taxi to use for the departure trip.");
     }
 
     const arrivalDateTime = new Date(`${arrivalDay}T${arrivalTimeStr}`);
@@ -406,7 +418,7 @@ const update = async (id, data) => {
       day: arrivalDay,
       timeFrame: arrivalSchedule,
       timeStart: arrivalTimeStr,
-      TaxiId: arrivalTaxiId,
+      TaxiId: arrivalPaddle ? null : arrivalTaxiId,
       fromPlace: arrivalCustom ? arrivalFromPlace : "Secret Beach",
       toPlace: arrivalCustom ? arrivalToPlace : "Lodge",
     };
@@ -425,7 +437,7 @@ const update = async (id, data) => {
       day: departureDay,
       timeFrame: departureSchedule,
       timeStart: departureTimeStr,
-      TaxiId: departureTaxiId,
+      TaxiId: departurePaddle ? null : departureTaxiId,
       fromPlace: departureCustom ? departureFromPlace : "Lodge",
       toPlace: departureCustom ? departureToPlace : "Secret Beach",
     };

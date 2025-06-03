@@ -1,5 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
     const Reservation = sequelize.define('Reservation', {
+      status: DataTypes.STRING // e.g., 'pending', 'confirmed', 'cancelled'
     });
   
     Reservation.associate = (models) => {
