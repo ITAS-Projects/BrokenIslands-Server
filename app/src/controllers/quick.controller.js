@@ -1,5 +1,10 @@
 const QuickService = require('../services/quick.service');
 
+exports.getAll = async (req, res) => {
+  const data = await QuickService.getAll();
+  res.json(data);
+};
+
 exports.getById = async (req, res) => {
   const data = await QuickService.getById(req.params.id);
   res.json(data);

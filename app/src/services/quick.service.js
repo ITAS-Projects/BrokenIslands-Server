@@ -5,7 +5,33 @@ const Trip = db.Trip;
 const Taxi = db.Taxi;
 const Group = db.Group;
 const Person = db.Person;
-const ReservationTrip = db.ReservationTrip;
+
+const getAll = async () => {
+  return await Reservation.findAll({
+    include: [
+      {
+        model: Group,
+        include: [
+          {
+            model: Person,
+            through: { attributes: [] },
+          },
+          {
+            model: Person,
+            as: "leader",
+          },
+        ],
+      },
+      {
+        model: Boat,
+      },
+      {
+        model: Trip,
+        through: { attributes: ['typeOfTrip'] },
+      },
+    ],
+  });
+}
 
 const getById = async (id) => {
   return await Reservation.findByPk(id, {
@@ -559,6 +585,7 @@ const deleteOne = async (id) => {
 };
 
 module.exports = {
+  getAll,
   getById,
   create,
   update,

@@ -1,6 +1,8 @@
 module.exports = (sequelize, DataTypes) => {
     const ReservationTrip = sequelize.define('ReservationTrip', {
-      typeOfTrip: DataTypes.STRING
+      typeOfTrip: DataTypes.STRING,
+      peopleOnTrip : DataTypes.INTEGER,
+      boatsOnTrip : DataTypes.INTEGER
     });
   
     ReservationTrip.associate = (models) => {
