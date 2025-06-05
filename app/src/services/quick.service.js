@@ -5,6 +5,7 @@ const Trip = db.Trip;
 const Taxi = db.Taxi;
 const Group = db.Group;
 const Person = db.Person;
+const ReservationTrip = db.ReservationTrip;
 
 const getAll = async () => {
   return await Reservation.findAll({
@@ -27,11 +28,11 @@ const getAll = async () => {
       },
       {
         model: Trip,
-        through: { attributes: ['typeOfTrip'] },
+        through: { attributes: ["typeOfTrip"] },
       },
     ],
   });
-}
+};
 
 const getById = async (id) => {
   return await Reservation.findByPk(id, {
@@ -54,7 +55,11 @@ const getById = async (id) => {
       },
       {
         model: Trip,
-        through: { attributes: ['typeOfTrip'] },
+        through: { attributes: [
+          "typeOfTrip",
+          "peopleOnTrip",
+          "boatsOnTrip"
+        ] },
       },
     ],
   });
@@ -63,7 +68,6 @@ const getById = async (id) => {
 const create = async (data) => {
   const transaction = await db.sequelize.transaction();
   try {
-
     const arrivalCustom = data?.arrivalSchedule?.startsWith("Custom");
     const departureCustom = data?.departureSchedule?.startsWith("Custom");
 
@@ -153,15 +157,15 @@ const create = async (data) => {
 
     // Find or create trips for reservation
     console.log(arrivalTimeStr);
-    console.log(data.arrivalSchedule)
-    console.log(data.arrivalTime)
+    console.log(data.arrivalSchedule);
+    console.log(data.arrivalTime);
     console.log(departureTimeStr);
     const arrivalData = {
       day: arrivalDay,
       schedule: arrivalSchedule,
       time: arrivalTimeStr,
       numberOfPeople: numberOfPeople,
-      totalBoats: totalBoats, 
+      totalBoats: totalBoats,
       taxiId: selectedTaxi.id,
       fromPlace: arrivalCustom ? arrivalFromPlace : "Secret Beach",
       toPlace: arrivalCustom ? arrivalToPlace : "Lodge",
@@ -170,7 +174,7 @@ const create = async (data) => {
       day: departureDay,
       schedule: departureSchedule,
       time: departureTimeStr,
-      totalBoats: totalBoats, 
+      totalBoats: totalBoats,
       taxiId: selectedTaxi.id,
       fromPlace: departureCustom ? departureFromPlace : "Lodge",
       toPlace: departureCustom ? departureToPlace : "Secret Beach",
@@ -210,10 +214,10 @@ const create = async (data) => {
 
 function resolveScheduleTime(schedule, customTime) {
   const scheduleToTime = {
-    "Lodge to Secret AM": "09:15:00",
-    "Secret to Lodge AM": "10:15:00",
-    "Lodge to Secret PM": "15:15:00",
-    "Secret to Lodge PM": "16:00:00",
+    "Lodge to Secret AM": "09:15",
+    "Secret to Lodge AM": "10:15",
+    "Lodge to Secret PM": "15:15",
+    "Secret to Lodge PM": "16:00",
   };
 
   if (schedule.startsWith("Custom") || schedule.startsWith("Paddle")) {
@@ -293,7 +297,7 @@ async function findOrCreateTrip({ day, schedule, time, numberOfPeople, totalBoat
       timeStart: time,
       TaxiId: taxiId,
       fromPlace: fromPlace,
-      toPlace: toPlace
+      toPlace: toPlace,
     },
     { transaction }
   );
@@ -304,69 +308,31 @@ async function findOrCreateTrip({ day, schedule, time, numberOfPeople, totalBoat
 const update = async (id, data) => {
   const transaction = await db.sequelize.transaction();
   try {
-    const arrivalDay = data.trips[0].day?.split("T")[0];
-    const departureDay = data.trips[1].day?.split("T")[0];
-    const arrivalSchedule = data.trips[0].timeFrame;
-    const departureSchedule = data.trips[1].timeFrame;
-    const arrivalTime = data.trips[0].timeStart;
-    const departureTime = data.trips[1].timeStart;
-    const arrivalFromPlace = data.trips[0].fromPlace;
-    const arrivalToPlace = data.trips[0].toPlace;
-    const departureFromPlace = data.trips[1].fromPlace;
-    const departureToPlace = data.trips[1].toPlace;
+    const arrivalTrips = data?.trips?.arrival;
+    const departureTrips = data?.trips?.departure;
 
-    const arrivalTrip = data.trips[0];
-    const departureTrip = data.trips[1];
-    const arrivalTaxiId = data.trips[0].TaxiId;
-    const departureTaxiId = data.trips[1].TaxiId;
+    if (!arrivalTrips || !departureTrips) {
+      throw new Error("A reservation needs arrival and departure trips.");
+    }
 
-    const arrivalCustom = arrivalSchedule.startsWith("Custom");
-    const departureCustom = departureSchedule.startsWith("Custom");
-
-    const arrivalPaddle = arrivalSchedule.startsWith("Paddle");
-    const departurePaddle = departureSchedule.startsWith("Paddle");
+    const arrivalDay = arrivalTrips[0]?.day?.split("T")[0];
+    const departureDay = departureTrips[0].day?.split("T")[0];
+    const arrivalFromPlace = arrivalTrips[0].fromPlace;
+    const arrivalToPlace = arrivalTrips[0].toPlace;
+    const departureFromPlace = departureTrips[0].fromPlace;
+    const departureToPlace = departureTrips[0].toPlace;
 
     // Validate data
     if (!arrivalDay || !departureDay) {
       throw new Error("Please select both arrival and departure dates.");
     }
 
-    if (!arrivalSchedule || !departureSchedule) {
-      throw new Error("Please select both arrival and departure schedules.");
+    if (data.numberOfPeople < 1) {
+      throw new Error("Please enter a valid group size.");
     }
 
-    if (arrivalCustom && !arrivalTime) {
-      throw new Error("Please enter arrival time for custom schedule.");
-    }
-
-    if (departureCustom && !departureTime) {
-      throw new Error("Please enter departure time for custom schedule.");
-    }
-
-    const arrivalTimeStr = resolveScheduleTime(arrivalSchedule, arrivalTime);
-    const departureTimeStr = resolveScheduleTime(departureSchedule, departureTime);
-
-    if (!arrivalTimeStr || !departureTimeStr) {
-      throw new Error("Both arrival and departure times must be defined.");
-    }
-
-    if (!arrivalPaddle && !arrivalTaxiId ) {
-      throw new Error("Plese select a taxi to use for the arrival trip.");
-    }
-
-    if (!departurePaddle && !departureTaxiId ) {
-      throw new Error("Plese select a taxi to use for the departure trip.");
-    }
-
-    const arrivalDateTime = new Date(`${arrivalDay}T${arrivalTimeStr}`);
-    const departureDateTime = new Date(`${departureDay}T${departureTimeStr}`);
-
-    if (arrivalDateTime >= departureDateTime) {
-      throw new Error("Departure must be after arrival.");
-    }
-
-    if (data.numberOfPeople < 1 || !data.people?.[0]?.name) {
-      throw new Error("Please enter a valid group size and leader name.");
+    if (!data.people?.[0]?.name) {
+      throw new Error("Please enter a leader name.");
     }
 
     if (data.numberOfPeople < data.people?.length) {
@@ -439,46 +405,234 @@ const update = async (id, data) => {
     await updatedGroup.update({ numberOfPeople: data.numberOfPeople, notes: data.notes }, { transaction });
 
     // Update or find trips for reservation
-    let updatedArrivalTrip;
-    const arrivalData = {
-      day: arrivalDay,
-      timeFrame: arrivalSchedule,
-      timeStart: arrivalTimeStr,
-      TaxiId: arrivalPaddle ? null : arrivalTaxiId,
-      fromPlace: arrivalCustom ? arrivalFromPlace : "Secret Beach",
-      toPlace: arrivalCustom ? arrivalToPlace : "Lodge",
-    };
-    if (arrivalTrip.id) {
-      updatedArrivalTrip = await Trip.findByPk(arrivalTrip.id, { transaction });
-      updatedArrivalTrip = await updatedArrivalTrip.update(arrivalData, {
-        transaction,
-        fields: Object.keys(arrivalData),
-      });
-    } else {
-      updatedArrivalTrip = await Trip.create(arrivalData, { transaction });
+    const updatedArrivalTrips = (
+      await Promise.all(
+        arrivalTrips.map(async (trip) => {
+          const arrivalSchedule = trip.timeFrame;
+          const arrivalPaddle = arrivalSchedule.startsWith("Paddle");
+          const arrivalCustom = arrivalSchedule.startsWith("Custom");
+          const arrivalTime = trip.timeStart;
+          const arrivalTaxiId = trip.TaxiId;
+          const arrivalTimeStr = resolveScheduleTime(arrivalSchedule, arrivalTime);
+
+          if (!arrivalSchedule) {
+            throw new Error("Please select all arrival schedules.");
+          }
+
+          if (arrivalCustom && !arrivalTime) {
+            throw new Error("Please enter arrival time for custom schedules.");
+          }
+
+          if (!arrivalTimeStr) {
+            throw new Error("All arrival times and shedules must be defined.");
+          }
+
+          if (!arrivalPaddle && !arrivalTaxiId) {
+            throw new Error("Plese select a taxi to use for the arrival trip.");
+          }
+
+          const arrivalData = {
+            day: arrivalDay,
+            timeFrame: arrivalSchedule,
+            timeStart: arrivalTimeStr,
+            TaxiId: arrivalPaddle ? null : arrivalTaxiId,
+            fromPlace: arrivalCustom ? arrivalFromPlace : "Secret Beach",
+            toPlace: arrivalCustom ? arrivalToPlace : "Lodge",
+          };
+
+          let tripInstance;
+          if (trip.id) {
+            let existingTrip = await Trip.findByPk(trip.id, { transaction });
+            tripInstance = await existingTrip.update(arrivalData, {
+              transaction,
+              fields: Object.keys(arrivalData),
+            });
+          } else {
+            tripInstance = await Trip.create(arrivalData, { transaction });
+          }
+
+          return {
+            instance: tripInstance,
+            peopleOnTrip: trip.peopleOnTrip || 0,
+            boatsOnTrip: trip.boatsOnTrip || 0,
+          };
+        })
+      )
+    ).sort((a, b) => {
+      return new Date(`${arrivalDay}T${b.timeStart}`) - new Date(`${arrivalDay}T${a.timeStart}`);
+    });
+
+    const updatedDepartureTrips = (
+      await Promise.all(
+        departureTrips.map(async (trip) => {
+          const departureSchedule = trip.timeFrame;
+          const departurePaddle = departureSchedule.startsWith("Paddle");
+          const departureCustom = departureSchedule.startsWith("Custom");
+          const departureTime = trip.timeStart;
+          const departureTaxiId = trip.TaxiId;
+          const departureTimeStr = resolveScheduleTime(departureSchedule, departureTime);
+
+          const departureData = {
+            day: departureDay,
+            timeFrame: departureSchedule,
+            timeStart: departureTimeStr,
+            TaxiId: departurePaddle ? null : departureTaxiId,
+            fromPlace: departureCustom ? departureFromPlace : "Lodge",
+            toPlace: departureCustom ? departureToPlace : "Secret Beach",
+          };
+
+          let tripInstance;
+          if (trip.id) {
+            let existingTrip = await Trip.findByPk(trip.id, { transaction });
+            tripInstance = await existingTrip.update(departureData, {
+              transaction,
+              fields: Object.keys(departureData),
+            });
+          } else {
+            tripInstance = await Trip.create(departureData, { transaction });
+          }
+
+          return {
+            instance: tripInstance,
+            peopleOnTrip: trip.peopleOnTrip || 0,
+            boatsOnTrip: trip.boatsOnTrip || 0,
+          };
+        })
+      )
+    ).sort((a, b) => {
+      return new Date(`${arrivalDay}T${a.timeStart}`) - new Date(`${arrivalDay}T${b.timeStart}`);
+    });
+
+    const latestArrivalDateTime = new Date(`${arrivalDay}T${updatedArrivalTrips[0]?.timeStart}`);
+    const earliestDepartureDateTime = new Date(`${departureDay}T${updatedDepartureTrips[0]?.timeStart}`);
+    if (latestArrivalDateTime >= earliestDepartureDateTime) {
+      throw new Error("Earliest departure must be after the latest arrival.");
     }
 
-    let updatedDepartureTrip;
-    const departureData = {
-      day: departureDay,
-      timeFrame: departureSchedule,
-      timeStart: departureTimeStr,
-      TaxiId: departurePaddle ? null : departureTaxiId,
-      fromPlace: departureCustom ? departureFromPlace : "Lodge",
-      toPlace: departureCustom ? departureToPlace : "Secret Beach",
-    };
-    if (departureTrip.id) {
-      updatedDepartureTrip = await Trip.findByPk(departureTrip.id, { transaction });
-      updatedDepartureTrip = await updatedDepartureTrip.update(departureData, {
-        transaction,
-        fields: Object.keys(departureData),
-      });
-    } else {
-      updatedDepartureTrip = await Trip.create(departureData, { transaction });
+    let totalArrivalPeople = updatedArrivalTrips.reduce((sum, trip) => sum + (trip.peopleOnTrip || 0), 0);
+    let totalDeparturePeople = updatedDepartureTrips.reduce((sum, trip) => sum + (trip.peopleOnTrip || 0), 0);
+    let totalArrivalBoats = updatedArrivalTrips.reduce((sum, trip) => sum + (trip.boatsOnTrip || 0), 0);
+    let totalDepartureBoats = updatedDepartureTrips.reduce((sum, trip) => sum + (trip.boatsOnTrip || 0), 0);
+    const totalReservationBoats = data.boats.reduce((sum, boats) => {
+      if (boats.isRented) {
+        return sum;
+      } else {
+        return sum + boats.numberOf;
+      }
+    }, 0);
+
+    if (arrivalTrips.length == 1) {
+      totalArrivalPeople = data.numberOfPeople;
+      totalArrivalBoats = totalReservationBoats;
+    }
+
+    if (departureTrips.length == 1) {
+      totalDeparturePeople = data.numberOfPeople;
+      totalDepartureBoats = totalReservationBoats;
+    }
+
+    if (totalArrivalPeople !== data.numberOfPeople) {
+      if (totalArrivalPeople > data.numberOfPeople) {
+        throw new Error("There are more people in the arrival trips than there are in the reservation");
+      } else {
+        throw new Error("There are less people in the arrival trips than there are in the reservation");
+      }
+    }
+
+    if (totalDeparturePeople !== data.numberOfPeople) {
+      if (totalDeparturePeople > data.numberOfPeople) {
+        throw new Error("There are more people in the departure trips than there are in the reservation");
+      } else {
+        throw new Error("There are less people in the departure trips than there are in the reservation");
+      }
+    }
+
+    if (totalArrivalBoats !== totalReservationBoats) {
+      if (totalArrivalBoats > totalReservationBoats) {
+        throw new Error("There are more personal boats in the arrival trips than there are in the reservation");
+      } else {
+        throw new Error("There are less personal boats in the arrival trips than there are in the reservation");
+      }
+    }
+
+    if (totalDepartureBoats !== totalReservationBoats) {
+      if (totalDepartureBoats > totalReservationBoats) {
+        throw new Error("There are more personal boats in the departure trips than there are in the reservation");
+      } else {
+        throw new Error("There are less personal boats in the departure trips than there are in the reservation");
+      }
     }
 
     // Update reservation's trips
-    await reservation.setTrips([updatedArrivalTrip.id, updatedDepartureTrip.id], { transaction });
+    const allTrips = [...updatedArrivalTrips, ...updatedDepartureTrips].map((trip) => trip.instance);
+    await reservation.setTrips(allTrips, { transaction });
+
+    //set through attributes
+    await Promise.all(
+      updatedArrivalTrips.map(async (trip) => {
+        if (arrivalTrips.length == 1) {
+          trip.peopleOnTrip = data.numberOfPeople;
+          trip.boatsOnTrip = totalReservationBoats;
+        }
+        if (trip.peopleOnTrip < 0) {
+          throw new Error("Cannot have less than 0 people in the arrival trip.");
+        }
+        if (trip.boatsOnTrip < 0) {
+          throw new Error("Cannot have less than 0 boats in the arrival trip.");
+        }
+        if (trip.boatsOnTrip < 1 && trip.peopleOnTrip < 1) {
+          throw new Error("The arrival trip must have either 1 boat or one person.");
+        }
+
+        return ReservationTrip.update(
+          {
+            typeOfTrip: "Arrival",
+            peopleOnTrip: trip.peopleOnTrip || 0,
+            boatsOnTrip: trip.boatsOnTrip || 0,
+          },
+          {
+            where: {
+              reservationId: id,
+              tripId: trip.instance.id,
+            },
+            transaction,
+          }
+        );
+      })
+    );
+
+    await Promise.all(
+      updatedDepartureTrips.map(async (trip) => {
+        if (departureTrips.length == 1) {
+          trip.peopleOnTrip = data.numberOfPeople;
+          trip.boatsOnTrip = totalReservationBoats;
+        }
+        if (trip.peopleOnTrip < 0) {
+          throw new Error("Cannot have less than 0 people in the departure trip.");
+        }
+        if (trip.boatsOnTrip < 0) {
+          throw new Error("Cannot have less than 0 boats in the departure trip.");
+        }
+        if (trip.boatsOnTrip < 1 && trip.peopleOnTrip < 1) {
+          throw new Error("The departure trip must have either 1 boat or one person.");
+        }
+
+        return ReservationTrip.update(
+          {
+            typeOfTrip: "Departure",
+            peopleOnTrip: trip.peopleOnTrip || 0,
+            boatsOnTrip: trip.boatsOnTrip || 0,
+          },
+          {
+            where: {
+              reservationId: id,
+              tripId: trip.instance.id,
+            },
+            transaction,
+          }
+        );
+      })
+    );
 
     // Update boats linked to reservation
     await Promise.all(
@@ -505,6 +659,8 @@ const update = async (id, data) => {
         }
       })
     );
+
+    // throw new Error("Unfinished backend"); // for debugging and error catching or testing
 
     // Commit transaction
     await transaction.commit();
