@@ -70,6 +70,8 @@ const create = async (data) => {
   try {
     const arrivalCustom = data?.arrivalSchedule?.startsWith("Custom");
     const departureCustom = data?.departureSchedule?.startsWith("Custom");
+    const arrivalPaddle = data?.arrivalSchedule?.startsWith("Paddle");
+    const departurePaddle = data?.departureSchedule?.startsWith("Paddle");
 
     // Backend validation logic
     if (!data.arrivalDay || !data.departureDay) {
@@ -80,12 +82,12 @@ const create = async (data) => {
       throw new Error("Please select both arrival and departure schedules.");
     }
 
-    if (arrivalCustom && !data.arrivalTime) {
-      throw new Error("Please enter arrival time for custom schedule.");
+    if ((arrivalCustom || arrivalPaddle) && !data.arrivalTime) {
+      throw new Error("Please enter arrival time for the selected schedule.");
     }
 
-    if (departureCustom && !data.departureTime) {
-      throw new Error("Please enter departure time for custom schedule.");
+    if ((departureCustom || departurePaddle) && !data.departureTime) {
+      throw new Error("Please enter departure time for the selected schedule.");
     }
 
     const arrivalTimeStr = resolveScheduleTime(data.arrivalSchedule, data.arrivalTime);
@@ -127,8 +129,6 @@ const create = async (data) => {
     const departureDay = data.departureDay;
     const arrivalSchedule = data.arrivalSchedule;
     const departureSchedule = data.departureSchedule;
-    const arrivalTime = data.arrivalTime;
-    const departureTime = data.departureTime;
     const arrivalFromPlace = data.arrivalFromPlace;
     const arrivalToPlace = data.arrivalToPlace;
     const departureFromPlace = data.departureFromPlace;
@@ -156,17 +156,13 @@ const create = async (data) => {
     const selectedTaxi = selectTaxi(taxis, numberOfPeople, totalBoats);
 
     // Find or create trips for reservation
-    console.log(arrivalTimeStr);
-    console.log(data.arrivalSchedule);
-    console.log(data.arrivalTime);
-    console.log(departureTimeStr);
     const arrivalData = {
       day: arrivalDay,
       schedule: arrivalSchedule,
       time: arrivalTimeStr,
       numberOfPeople: numberOfPeople,
       totalBoats: totalBoats,
-      taxiId: selectedTaxi.id,
+      taxiId: arrivalPaddle ? null : selectedTaxi.id,
       fromPlace: arrivalCustom ? arrivalFromPlace : "Secret Beach",
       toPlace: arrivalCustom ? arrivalToPlace : "Lodge",
     };
@@ -175,7 +171,7 @@ const create = async (data) => {
       schedule: departureSchedule,
       time: departureTimeStr,
       totalBoats: totalBoats,
-      taxiId: selectedTaxi.id,
+      taxiId: departurePaddle ? null : selectedTaxi.id,
       fromPlace: departureCustom ? departureFromPlace : "Lodge",
       toPlace: departureCustom ? departureToPlace : "Secret Beach",
     };
@@ -185,7 +181,37 @@ const create = async (data) => {
 
     // Create the reservation and link all data
     const reservation = await Reservation.create({ GroupId: group.id }, { transaction: transaction });
-    await reservation.setTrips([arrivalTrip.id, departureTrip.id], { transaction: transaction });
+    await reservation.setTrips([arrivalTrip, departureTrip], { transaction: transaction });
+
+    await ReservationTrip.update(
+      {
+        typeOfTrip: "Arrival",
+        peopleOnTrip: numberOfPeople,
+        boatsOnTrip: totalBoats,
+      },
+      {
+        where: {
+          reservationId: reservation.id,
+          tripId: arrivalTrip.id,
+        },
+        transaction,
+      }
+    );
+
+    await ReservationTrip.update(
+      {
+        typeOfTrip: "Departure",
+        peopleOnTrip: numberOfPeople,
+        boatsOnTrip: totalBoats,
+      },
+      {
+        where: {
+          reservationId: reservation.id,
+          tripId: departureTrip.id,
+        },
+        transaction,
+      }
+    );
 
     // Create boats and link to reservation
     await Promise.all(
@@ -264,7 +290,7 @@ async function findOrCreateTrip({ day, schedule, time, numberOfPeople, totalBoat
     transaction,
   });
 
-  if (trip) {
+  if (trip && !schedule.startsWith("Paddle")) {
     // Trip exists, check Taxi capacity
     const existingPeople = trip.Reservations.reduce((sum, r) => sum + (r.Group?.numberOfPeople || 0), 0);
     const existingBoats = trip.Reservations.reduce((sum, r) => sum + r.Boats.reduce((bSum, b) => bSum + (b.numberOf || 0), 0), 0);
