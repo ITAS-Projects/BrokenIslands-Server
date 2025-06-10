@@ -20,6 +20,7 @@ app.use('/api/boats', require('./routes/boat'));
 app.use('/api/trips', require('./routes/trip'));
 
 app.use('/api/quick', require('./routes/quick'));
+app.use('/api/trip', require('./routes/trip2'));
 
 app.use('/api/users', validateUserHasPermissions(["User Admin"]), require('./routes/user'));
 app.use('/api/roles', validateUserHasPermissions(["User Admin"]), require('./routes/roles'));

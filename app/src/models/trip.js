@@ -6,7 +6,6 @@ module.exports = (sequelize, DataTypes) => {
     fromPlace: DataTypes.STRING,        // the island, or position that the taxi starts at
     toPlace: DataTypes.STRING,          // the island or place the taxi ends at
     timeFrame: DataTypes.STRING,        // the time frame the trip is set for (AM from lodge, AM to lodge, PM from lodge, PM custom, ect)
-    reason: DataTypes.STRING,           // the reason / notes for the trip eg lumber moving, row back ect
   });
 
   Trip.associate = (models) => {
