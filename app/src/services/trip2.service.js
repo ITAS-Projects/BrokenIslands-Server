@@ -50,6 +50,10 @@ const getAll = async () => {
                     {
                         model: Boat,
                     },
+                    {
+                        model: Person,
+                        through: { attributes: [] },
+                    },
                 ],
             },
         ],
@@ -100,6 +104,10 @@ const getById = async (id) => {
                     {
                         model: Boat,
                     },
+                    {
+                        model: Person,
+                        through: { attributes: [] },
+                    },
                 ],
             },
         ],
@@ -117,7 +125,7 @@ const create = async (data) => {
         const toPlace = trip.toPlace;
         const timeStr = trip.timeStart;
         const numberOfPeople = data.numberOfPeople;
-        const notes = trip.reason;
+        const notes = data.notes;
         const people = data.people;
         const boats = data.boats;
 
@@ -157,18 +165,18 @@ const create = async (data) => {
         }
 
         if (!(fromPlace || "") || !(toPlace || "")) {
-            throw new Error("Please add a place to and a place from for this trip.")
+            throw new Error("Please add a place to and a place from for this trip.");
         }
-        
+
         // Select taxi (get smallest taxi with enough space)
         const taxis = await Taxi.findAll();
         if (taxis?.length < 1) {
             throw new Error("No taxis found");
         }
-        
+
         const totalBoats = boats.reduce((sum, boat) => sum + Number(boat.numberOf || 0), 0);
         const selectedTaxi = selectTaxi(taxis, numberOfPeople, totalBoats);
-        
+
         // Create trip
         const createdTrip = await Trip.create(
             {
@@ -207,7 +215,7 @@ const create = async (data) => {
 
         // If no errors, and all data is created, save new reservation
         await transaction.commit();
-        return { id: group.id };
+        return { id: createdTrip.id };
     } catch (err) {
         console.error("Error during reservation creation:", err); // Log the error
         await transaction.rollback();
@@ -225,8 +233,178 @@ function selectTaxi(taxis, numberOfPeople, totalBoats) {
 }
 
 const update = async (id, data) => {
-    throw new Error("Not implemented");
-    return null;
+    console.log(data.trip.People);
+    console.log(data);
+    const transaction = await db.sequelize.transaction();
+    try {
+        const trip = data.trip;
+        const day = trip.day;
+        const schedule = trip.timeFrame;
+        const fromPlace = trip.fromPlace;
+        const toPlace = trip.toPlace;
+        const timeStr = trip.timeStart;
+        const numberOfPeople = data.numberOfPeople;
+        const notes = data.notes;
+        const people = data.people;
+        const boats = data.boats;
+
+        // Backend validation logic
+        if (!day) {
+            throw new Error("Please select a date.");
+        }
+
+        if (!schedule) {
+            throw new Error("Please select a schedule.");
+        }
+
+        if (!timeStr) {
+            throw new Error("Please enter the time the trip starts.");
+        }
+
+        const arrivalDateTime = new Date(`${day}T${timeStr}`);
+
+        if (numberOfPeople < 1 || !people?.[0]?.name) {
+            throw new Error("Please enter a valid group size and leader name.");
+        }
+
+        if (numberOfPeople < people?.length) {
+            throw new Error("There are too many people with data for the number of people stated.");
+        }
+
+        for (let person of people) {
+            if (!person.name) {
+                throw new Error("Each person must have a name.");
+            }
+        }
+
+        for (let boat of boats) {
+            if (!boat.type || boat.numberOf <= 0) {
+                throw new Error("Each boat group must have a valid type and count.");
+            }
+        }
+
+        if (!(fromPlace || "") || !(toPlace || "")) {
+            throw new Error("Please add a place to and a place from for this trip.");
+        }
+
+        // Select taxi (get smallest taxi with enough space)
+        const taxis = await Taxi.findAll();
+        if (taxis?.length < 1) {
+            throw new Error("No taxis found");
+        }
+
+        // Create trip
+        const updatedTrip = await Trip.findByPk(id, {
+            include: [
+                {
+                    model: Group,
+                    as: "People",
+                    include: [
+                        {
+                            model: Boat,
+                        },
+                        {
+                            model: Person,
+                            through: { attributes: [] },
+                        },
+                    ],
+                },
+            ],
+            transaction,
+        });
+        if (!updatedTrip) {
+            throw new Error("Trip not found.");
+        }
+
+        await updatedTrip.update(
+            {
+                day: day,
+                timeFrame: schedule,
+                timeStart: timeStr,
+                TaxiId: trip.TaxiId,
+                fromPlace: fromPlace,
+                toPlace: toPlace,
+            },
+            { transaction }
+        );
+
+        // Create people for group
+        // Update or create people
+        const updatedPeople = await Promise.all(
+            people.map(async (personMap) => {
+                let person;
+
+                if (personMap.id) {
+                    // Find existing person
+                    person = await Person.findByPk(personMap.id, { transaction });
+                    if (!person) {
+                        throw new Error(`Person with id ${personMap.id} not found`);
+                    }
+
+                    // Update the person
+                    await person.update(
+                        {
+                            name: personMap.name,
+                        },
+                        { transaction }
+                    );
+                } else {
+                    // Create new person
+                    person = await Person.create(
+                        {
+                            name: personMap.name,
+                        },
+                        { transaction }
+                    );
+                }
+
+                return person;
+            })
+        );
+
+        // Create group of people for reservation
+        const updatedGroup = await Group.findByPk(updatedTrip.People.id, { transaction });
+
+        await updatedGroup.setPeople(updatedPeople, { transaction: transaction });
+
+        await updatedGroup.update({ seperatePeople: true, numberOfPeople, notes: notes }, { transaction: transaction });
+
+        // Create boats and link to reservation
+        const updatedBoats = await Promise.all(
+            boats.map(async (boatData) => {
+                if (boatData.id) {
+                    return await Boat.update(
+                        {
+                            type: boatData.type,
+                            numberOf: boatData.numberOf,
+                            isRented: boatData.isRented,
+                        },
+                        { where: { id: boatData.id }, transaction }
+                    );
+                } else {
+                    return await Boat.create(
+                        {
+                            type: boatData.type,
+                            numberOf: boatData.numberOf,
+                            isRented: boatData.isRented,
+                            GroupId: updatedGroup.id,
+                        },
+                        { transaction }
+                    );
+                }
+            })
+        );
+
+        await updatedGroup.setBoats(updatedBoats, { transaction: transaction });
+
+        // If no errors, and all data is created, save new reservation
+        await transaction.commit();
+        return { id: updatedTrip.id };
+    } catch (err) {
+        console.error("Error during reservation creation:", err); // Log the error
+        await transaction.rollback();
+        throw err; // Re-throw to propagate the error
+    }
 };
 
 const deleteOne = async (id) => {

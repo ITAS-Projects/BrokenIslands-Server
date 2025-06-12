@@ -16,13 +16,18 @@ exports.create = async (req, res) => {
     res.status(201).json(data);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message || "Failed to create reservation" });
+    res.status(500).json({ error: err.message || "Failed to create trip" });
   }
 };
 
 exports.update = async (req, res) => {
-  const data = await Trip2Service.update(req.params.id, req.body);
-  res.json(data);
+  try {
+    const data = await Trip2Service.update(req.params.id, req.body);
+    res.status(201).json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || "Failed to edit trip" });
+  }
 };
 
 exports.delete = async (req, res) => {

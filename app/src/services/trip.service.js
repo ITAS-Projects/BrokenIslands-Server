@@ -49,6 +49,10 @@ const getAll = async () => {
         include: [
           {
             model: Boat,
+          },
+          {
+            model: Person,
+            as: 'leader'
           }
         ]
       },
@@ -99,6 +103,10 @@ const getById = async (id) => {
         include: [
           {
             model: Boat,
+          },
+          {
+            model: Person,
+            as: 'leader'
           }
         ]
       },

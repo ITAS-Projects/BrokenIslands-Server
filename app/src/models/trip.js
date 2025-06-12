@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       through: 'GroupTrip',
       foreignKey: 'tripId',
       otherKey: 'groupId'
-    });
+    });                                 // unused value
     Trip.hasOne(models.Group, { foreignKey: 'AdditionalPeople', as: 'People' });
   };
 

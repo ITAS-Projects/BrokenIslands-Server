@@ -661,10 +661,10 @@ const update = async (id, data) => {
     );
 
     // Update boats linked to reservation
-    await Promise.all(
+    const updatedBoats = await Promise.all(
       data.boats.map(async (boatData) => {
         if (boatData.id) {
-          await Boat.update(
+          return await Boat.update(
             {
               type: boatData.type,
               numberOf: boatData.numberOf,
@@ -673,7 +673,7 @@ const update = async (id, data) => {
             { where: { id: boatData.id }, transaction }
           );
         } else {
-          await Boat.create(
+          return await Boat.create(
             {
               type: boatData.type,
               numberOf: boatData.numberOf,
@@ -686,7 +686,7 @@ const update = async (id, data) => {
       })
     );
 
-    // throw new Error("Unfinished backend"); // for debugging and error catching or testing
+    await reservation.setBoats(updatedBoats, { transaction: transaction });
 
     // Commit transaction
     await transaction.commit();
