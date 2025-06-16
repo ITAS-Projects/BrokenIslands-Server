@@ -14,7 +14,6 @@ const getAll = async () => {
       },
       {
         model: Group,
-        through: { attributes: [] },
         include: [
           {
             model: Boat,
@@ -40,19 +39,6 @@ const getAll = async () => {
           },
           {
             model: Boat,
-          }
-        ]
-      },
-      {
-        model: Group,
-        as: 'People',
-        include: [
-          {
-            model: Boat,
-          },
-          {
-            model: Person,
-            as: 'leader'
           }
         ]
       },
@@ -68,7 +54,6 @@ const getById = async (id) => {
       },
       {
         model: Group,
-        through: { attributes: [] },
         include: [
           {
             model: Boat,
@@ -94,19 +79,6 @@ const getById = async (id) => {
           },
           {
             model: Boat,
-          }
-        ]
-      },
-      {
-        model: Group,
-        as: 'People',
-        include: [
-          {
-            model: Boat,
-          },
-          {
-            model: Person,
-            as: 'leader'
           }
         ]
       },
